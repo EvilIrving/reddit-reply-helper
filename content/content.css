@@ -28,3 +28,26 @@
   width: auto !important;
   display: inline-block !important;
 }
+.rrh-translate-btn.rrh-old {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 5px 0;
+  padding: 4px 8px;
+  border: 1px solid #878a8c;
+  border-radius: 3px;
+  background: #fff;
+  color: #1a1a1b;
+  cursor: pointer;
+  font: 12px/1.2 Arial, sans-serif;
+}
+
+.rrh-translate-btn.rrh-old svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rrh-translate-btn.rrh-old:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}

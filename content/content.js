@@ -8,6 +8,7 @@
 
   /** @type {Set<string>} */
   const seenIds = new Set();
+  const detailAssistedIds = new Set();
   /** @type {boolean} */
   let followEnabled = true;
   /** @type {boolean} */
@@ -197,6 +198,9 @@
     reportCurrentSub();
     if (followEnabled) runAnalyze(false);
   }, 1500);
+  setTimeout(() => {
+    if (followEnabled) runAnalyze(false);
+  }, 3500);
 
   // SPA navigation on new Reddit
   let lastPath = location.pathname;
@@ -204,6 +208,7 @@
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       seenIds.clear();
+      detailAssistedIds.clear();
       reportCurrentSub();
       if (followEnabled) {
         setTimeout(() => runAnalyze(false), 800);
@@ -263,11 +268,15 @@
 
     const posts = S()?.scrapePosts?.() || [];
     if (!posts.length) return;
+    const detailPost = posts.find((post) => post.existingComments?.length);
+    const forceId = detailPost && (force || !detailAssistedIds.has(detailPost.id))
+      ? detailPost.id
+      : undefined;
 
     const batch = [];
     for (const p of posts) {
       if (!p.id) continue;
-      if (!force && seenIds.has(p.id)) continue;
+      if (!force && seenIds.has(p.id) && p.id !== forceId) continue;
       seenIds.add(p.id);
       batch.push(p);
     }
@@ -279,7 +288,7 @@
       const res = await chrome.runtime.sendMessage({
         type: 'RRH_ANALYZE_POSTS',
         posts: force ? posts : batch,
-        forceId: posts.find((post) => post.existingComments?.length)?.id,
+        forceId,
         // tell SW whether a card is open (for pending count only; SW still queues all)
         overlayOpen: !!O()?.isOpen?.(),
       });
@@ -287,6 +296,7 @@
         pendingCount = res.pending;
         O()?.setPendingCount?.(pendingCount);
       }
+      if (res?.ok && forceId) detailAssistedIds.add(forceId);
     } catch (e) {
       console.warn('[RRH] analyze failed', e);
     } finally {

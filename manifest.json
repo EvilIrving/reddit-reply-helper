@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reddit 协作回复助手",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "跟随滚动/巡航发现值得回的帖，DeepSeek 生成评论草稿，每日发帖备选。你确认后手动发送。",
   "permissions": ["storage", "sidePanel", "activeTab", "scripting", "alarms"],
   "host_permissions": [
@@ -39,7 +39,7 @@
         "https://old.reddit.com/*",
         "https://new.reddit.com/*"
       ],
-      "js": ["content/scrape.js", "content/overlay.js", "content/content.js"],
+      "js": ["content/scrape.js", "content/overlay.js", "content/translate.js", "content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_idle"
     }

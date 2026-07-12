@@ -12,11 +12,17 @@ const els = {
   btnForceScan: $('btnForceScan'),
   btnStartCruise: $('btnStartCruise'),
   btnStopCruise: $('btnStopCruise'),
+  btnClearProcessed: $('btnClearProcessed'),
   btnDailyLoad: $('btnDailyLoad'),
   btnDailyRegen: $('btnDailyRegen'),
 };
 
 init();
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local') return;
+  if (changes.rrh_queue && document.activeElement?.tagName !== 'TEXTAREA') loadQueue();
+});
 
 async function init() {
   els.tabs.forEach((tab) => {
@@ -27,6 +33,7 @@ async function init() {
   els.btnForceScan.addEventListener('click', forceScan);
   els.btnStartCruise.addEventListener('click', () => sendToActive({ type: 'RRH_START_CRUISE' }));
   els.btnStopCruise.addEventListener('click', () => sendToActive({ type: 'RRH_STOP_CRUISE' }));
+  els.btnClearProcessed.addEventListener('click', clearProcessed);
   els.btnDailyLoad.addEventListener('click', () => loadDaily(false));
   els.btnDailyRegen.addEventListener('click', () => loadDaily(true));
   els.settingsForm.addEventListener('submit', onSaveSettings);
@@ -90,17 +97,18 @@ async function onSaveSettings(e) {
       .map((x) => x.replace(/^r\//i, '').trim())
       .filter(Boolean),
     followEnabled: !!f.followEnabled.checked,
-    minScore: Number(f.minScore.value) || 58,
+    minScore: clampNumber(f.minScore.value, 0, 100, 58),
     apiBase: f.apiBase.value.trim() || 'https://api.deepseek.com/v1',
     apiKey: f.apiKey.value.trim(),
     model: f.model.value.trim() || 'deepseek-chat',
     language: f.language.value === 'en' ? 'en' : 'zh',
     persona: f.persona.value.trim(),
-    dailyAiLimit: Number(f.dailyAiLimit.value) || 40,
+    dailyAiLimit: clampNumber(f.dailyAiLimit.value, 1, 200, 40),
     cruiseSpeed: f.cruiseSpeed.value || 'normal',
   };
   const res = await chrome.runtime.sendMessage({ type: 'RRH_SAVE_SETTINGS', patch });
   els.settingsStatus.textContent = res?.ok ? '已保存' : `保存失败：${res?.error || ''}`;
+  if (res?.ok) await loadSettingsForm();
 }
 
 async function loadQueue() {
@@ -168,6 +176,18 @@ function renderQueueCard(item) {
       <button type="button" class="btn small" data-act="later">先收着</button>
     </div>
   `;
+  const draftInput = el.querySelector('textarea[data-d="draft"]');
+  let saveTimer;
+  draftInput?.addEventListener('input', () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      chrome.runtime.sendMessage({
+        type: 'RRH_UPDATE_QUEUE_ITEM',
+        id: item.id,
+        patch: { draft: draftInput.value, drafts: [draftInput.value] },
+      });
+    }, 450);
+  });
   el.querySelectorAll('[data-act]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const act = btn.getAttribute('data-act');
@@ -180,6 +200,7 @@ function renderQueueCard(item) {
           status: 'copied',
         });
         setQueueStatus('已复制');
+        await loadQueue();
         return;
       }
       if (act === 'skip' || act === 'later') {
@@ -272,7 +293,6 @@ function renderDaily(post) {
       <button type="button" class="btn small" id="d-adopt">标记已去发</button>
       <button type="button" class="btn small" id="d-discard">弃用</button>
     </div>
-    <p class="muted" style="margin-top:8px">英文 sub 请自行翻译后发布。插件不会自动发帖。</p>
   `;
   $('d-copy-t1')?.addEventListener('click', () => copyText(titles[0] || ''));
   $('d-copy-t2')?.addEventListener('click', () => copyText(titles[1] || ''));
@@ -285,6 +305,12 @@ function renderDaily(post) {
     await chrome.runtime.sendMessage({ type: 'RRH_DAILY_STATUS', status: 'discarded' });
     await loadDaily(false);
   });
+}
+
+async function clearProcessed() {
+  const res = await chrome.runtime.sendMessage({ type: 'RRH_CLEAR_PROCESSED' });
+  setQueueStatus(res?.ok ? '已清理已处理记录' : `清理失败：${res?.error || ''}`, !res?.ok);
+  if (res?.ok) await loadQueue();
 }
 
 /**
@@ -349,4 +375,10 @@ function escapeHtml(s) {
 
 function escapeAttr(s) {
   return escapeHtml(s).replace(/'/g, '&#39;');
+}
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
 }

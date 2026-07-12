@@ -444,6 +444,7 @@
 
   RRH.onCruiseToggle = null;
   RRH.onScanNow = null;
+  RRH.notify = showToast;
 
   function handleAct(act) {
     if (!currentItem && act !== 'side' && act !== 'next' && act !== 'dock-side') return;
