@@ -1,0 +1,25 @@
+# 本地代理说明与编辑器文件
+AGENTS.md
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# 本地密钥与环境变量
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 依赖、构建与临时产物
+node_modules/
+dist/
+build/
+releases/
+*.zip
+*.log
+coverage/
+.cache/
+tmp/
+

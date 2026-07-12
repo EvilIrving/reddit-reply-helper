@@ -1,0 +1,26 @@
+# 隐私说明
+
+更新日期：2026-07-13
+
+Reddit 协作回复助手是非官方浏览器扩展，与 Reddit 或 DeepSeek 无隶属、赞助或背书关系。
+
+## 扩展读取的内容
+
+扩展在 `reddit.com`、`old.reddit.com` 与 `new.reddit.com` 页面上读取当前可见帖子的标题、正文摘要、subreddit、分数、评论数和链接，用于本地打分、推荐、定位与队列功能。扩展不会代表用户自动发布帖子、评论或投票。
+
+## 本地存储
+
+设置、API Key、AI 调用计数、已处理记录、待办队列、每日发帖备选和最近浏览的 subreddit 保存在 `chrome.storage.local`。这些数据不会发送到本项目维护者运营的服务器；卸载扩展或清除扩展存储会删除本地数据。
+
+## 外部传输
+
+用户配置 API Key 后，扩展会把候选帖子的 subreddit、标题、部分正文与互动数字发送到用户配置的 OpenAI 兼容 API，默认是 DeepSeek，以生成翻译、摘要、提醒和草稿。API Key 会在请求的 `Authorization` 标头中直接发送给该服务；请求不包含 Reddit Cookie，但第三方服务会按其自身条款处理请求内容、凭据与网络元数据。
+
+扩展也可向 Reddit 的 JSON 或 RSS 地址发起读取请求作为辅助获取路径。扩展不包含分析统计、广告、远程日志或其他第三方 SDK。
+
+## 权限用途
+
+`storage` 用于本地设置和队列，`sidePanel` 用于侧栏，`activeTab` 与 `scripting` 用于当前页面交互，`alarms` 用于检查每日发帖备选。Reddit 主机权限用于读取和定位帖子，DeepSeek 主机权限用于用户主动配置后的 AI 请求。
+
+隐私或安全问题请通过仓库的 Issue 提交非敏感反馈；漏洞或含私密信息的问题请按 `SECURITY.md` 私下报告。
+

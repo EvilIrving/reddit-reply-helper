@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reddit 协作助手</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">
+        <img src="icons/icon-32.png" width="20" height="20" alt="" />
+        <strong>协作助手 v0.2</strong>
+      </div>
+      <p class="tagline">跟随滚动 · 巡航 · DeepSeek 草稿 · 每日发帖备选 · 你点发送</p>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" class="tab active" data-tab="queue">队列</button>
+      <button type="button" class="tab" data-tab="daily">今日发帖</button>
+      <button type="button" class="tab" data-tab="settings">设置</button>
+    </nav>
+
+    <!-- QUEUE -->
+    <section id="tab-queue" class="tab-panel">
+      <div class="toolbar">
+        <button id="btnRefreshQueue" class="btn" type="button">刷新</button>
+        <button id="btnForceScan" class="btn primary" type="button">当前页立即分析</button>
+        <button id="btnStartCruise" class="btn" type="button">开始巡航</button>
+        <button id="btnStopCruise" class="btn" type="button">停止巡航</button>
+      </div>
+      <p id="queueStatus" class="status">在 Reddit 列表页滚动，或点巡航。命中会弹页内浮层。</p>
+      <div id="queueList" class="list"></div>
+    </section>
+
+    <!-- DAILY -->
+    <section id="tab-daily" class="tab-panel hidden">
+      <div class="toolbar">
+        <button id="btnDailyLoad" class="btn primary" type="button">生成/刷新今日备选</button>
+        <button id="btnDailyRegen" class="btn" type="button">强制重新生成</button>
+      </div>
+      <p id="dailyStatus" class="status">每天 1 份备选，觉得好再自己去发。</p>
+      <div id="dailyCard" class="daily-card empty">尚未生成</div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="tab-panel hidden">
+      <form id="settingsForm" class="filters">
+        <label class="field">
+          <span>可选偏好 sub（逗号分隔，仅轻微加分，不限制范围）</span>
+          <input name="focusSubs" type="text" placeholder="可留空；任意浏览过的 sub 都会分析" />
+        </label>
+        <p id="visitedHint" class="muted" style="margin:0"></p>
+        <label class="field check">
+          <input name="followEnabled" type="checkbox" />
+          <span>跟随滚动自动分析（默认开）</span>
+        </label>
+        <label class="field row">
+          <span>推荐最低分</span>
+          <input name="minScore" type="number" min="0" max="100" />
+        </label>
+        <label class="field">
+          <span>DeepSeek API Base</span>
+          <input name="apiBase" type="text" placeholder="https://api.deepseek.com/v1" />
+        </label>
+        <label class="field">
+          <span>API Key</span>
+          <input name="apiKey" type="password" autocomplete="off" placeholder="sk-..." />
+        </label>
+        <label class="field">
+          <span>Model</span>
+          <input name="model" type="text" placeholder="deepseek-chat" />
+        </label>
+        <label class="field">
+          <span>草稿语言</span>
+          <select name="language">
+            <option value="zh">中文（默认）</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>人设</span>
+          <input name="persona" type="text" />
+        </label>
+        <label class="field row">
+          <span>每日 AI 次数上限</span>
+          <input name="dailyAiLimit" type="number" min="1" max="200" />
+        </label>
+        <label class="field">
+          <span>巡航速度</span>
+          <select name="cruiseSpeed">
+            <option value="slow">慢</option>
+            <option value="normal">正常</option>
+            <option value="fast">快</option>
+          </select>
+        </label>
+        <button type="submit" class="btn primary full">保存设置</button>
+      </form>
+      <p id="settingsStatus" class="muted"></p>
+    </section>
+
+    <footer class="footer">
+      <p>不自动发帖/评论。Key 只存在本机 chrome.storage。</p>
+    </footer>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>

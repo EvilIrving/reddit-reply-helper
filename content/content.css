@@ -1,0 +1,30 @@
+/* Only page-level markers (inside Reddit DOM). Floating UI is Shadow DOM. */
+
+.rrh-highlight {
+  outline: 3px solid #ff4500 !important;
+  outline-offset: 4px !important;
+  border-radius: 8px !important;
+}
+
+.rrh-recommended {
+  box-shadow: inset 3px 0 0 #ff4500 !important;
+}
+
+.rrh-badge {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 1000 !important;
+  background: #ff4500 !important;
+  color: #fff !important;
+  font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  padding: 4px 8px !important;
+  border-radius: 999px !important;
+  pointer-events: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  margin: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  width: auto !important;
+  display: inline-block !important;
+}
