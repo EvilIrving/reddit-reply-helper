@@ -1,0 +1,18 @@
+{
+  "name": "reddit-reply-helper",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Reddit 人机协作回复浏览器扩展",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "assets:store": "node scripts/generate-store-assets.mjs",
+    "package": "node scripts/package.mjs",
+    "release:check": "node scripts/validate-release.mjs",
+    "release": "npm run validate && npm run package && npm run release:check"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ff5728" />
+    <meta name="description" content="Reddit 协作回复助手 Microsoft Edge 版本的隐私说明、数据流与权限用途。" />
+    <link rel="icon" href="assets/icon-32.png" />
+    <link rel="stylesheet" href="site.css" />
+    <title>Microsoft Edge 版本隐私说明｜Reddit 协作回复助手</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header class="site-header"><div class="shell"><a class="brand" href="index.html"><img src="assets/icon-48.png" alt="" /><span>Reddit 协作回复助手</span></a><nav class="nav" aria-label="主导航"><a href="index.html">首页</a><a href="install.html">安装</a><a class="nav-cta" href="support.html">支持</a></nav></div></header>
+    <section class="document-hero"><div class="shell"><h1>Microsoft Edge 版本隐私说明</h1><p>更新日期：2026 年 7 月 13 日。本页面专门说明 Microsoft Edge Add-ons 版本的数据处理方式。</p></div></section>
+    <main class="document" id="main">
+      <div class="callout"><p><strong>简要说明：</strong>Microsoft Edge 版本在 Reddit 页面读取完成核心功能所需的内容，并把设置、API Key 和队列保存在 Edge 的扩展本地存储中。只有在用户明确勾选同意后，必要文本才会发送到用户填写的 AI 服务。</p></div>
+      <h2>产品身份与单一用途</h2>
+      <p>Reddit 协作回复助手是独立开发的非官方 Microsoft Edge 扩展，与 Microsoft、Reddit 或 DeepSeek 无隶属、赞助或背书关系。单一用途是帮助用户在浏览 Reddit 时发现、理解并准备可编辑的回复或发帖草稿，最终判断、修改与发送始终由用户完成。</p>
+      <p>扩展不会绕过登录、订阅、付费内容、访问控制或 subreddit 规则，也不会代表用户自动发帖、评论或投票。</p>
+      <h2>运行范围与本地读取</h2>
+      <p>扩展仅在 <code>reddit.com</code>、<code>old.reddit.com</code> 与 <code>new.reddit.com</code> 运行。它会读取当前页面已经显示的帖子标题、部分正文、subreddit、发布时间、分数、评论数、标签和链接，用于评分、推荐、定位与队列。</p>
+      <p>在详情页，扩展最多读取 24 条当前已加载且可见的评论，用于归纳已覆盖观点和减少草稿重复；折叠、尚未加载或未显示的评论不会参与。用户主动点击中译英时，扩展会读取当前编辑器文本用于翻译回填，但不会触发发送。</p>
+      <h2>Microsoft Edge 本地存储</h2>
+      <p>设置、API Base、API Key、模型名、AI 数据发送同意状态、待办队列、已处理记录、每日发帖候选与最近访问的 subreddit 保存在 Microsoft Edge 的扩展本地存储中。项目维护者不运营同步服务或中转服务器，也不能读取这些本地数据。</p>
+      <p>用户可以随时在设置中撤回 AI 数据发送同意、清空 Key，或从 Microsoft Edge 移除扩展并清除本地扩展数据。</p>
+      <h2>外部传输</h2>
+      <p>只有当用户填写 API Key 并明确勾选 AI 数据发送同意后，扩展才会向用户填写的 OpenAI 兼容 API 发起 HTTPS 请求，默认服务为 DeepSeek。请求可能包含候选帖子的 subreddit、标题、部分正文、发布时间、互动数字、标签、详情页当前已加载的可见评论，以及用户主动要求翻译的编辑器文本。</p>
+      <p>AI 原生评分一次可能包含最多 20 篇候选帖子，详情页避重上下文最多包含 24 条当前可见评论。API Key 通过 <code>Authorization</code> 标头直接发送到所填服务，请求不附带 Reddit Cookie。第三方 AI 服务按其自身条款处理请求内容、凭据与网络元数据。</p>
+      <p>撤回同意会停止后续 AI 请求，但不会删除第三方此前已经接收的数据。扩展也可能向 Reddit JSON 或 RSS 地址发起只读请求，作为页面扫描的辅助路径。</p>
+      <h2>权限用途</h2>
+      <table>
+        <thead><tr><th>权限</th><th>Microsoft Edge 版本用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>storage</code></td><td>在 Edge 本地保存设置、API Key、同意状态、队列和记录。</td></tr>
+          <tr><td><code>sidePanel</code></td><td>在 Microsoft Edge 侧栏显示待办、每日备选与设置。</td></tr>
+          <tr><td><code>activeTab</code></td><td>在用户主动操作时识别当前 Reddit 标签页。</td></tr>
+          <tr><td><code>scripting</code></td><td>内容脚本尚未加载时，仅在用户点击“立即分析”后注入扩展包内自带脚本和样式。</td></tr>
+          <tr><td>Reddit 主机权限</td><td>读取当前页面内容，并访问 Reddit JSON/RSS 只读辅助数据。</td></tr>
+          <tr><td>DeepSeek 主机权限</td><td>用户填写 Key 且明确同意后发送 AI 请求。</td></tr>
+        </tbody>
+      </table>
+      <h2>不进行的处理</h2>
+      <p>扩展不出售或出租用户数据，不包含广告、分析统计、远程日志、数据经纪、远程执行代码或其他第三方 SDK，也不把数据用于广告投放、信用评估或与核心功能无关的分析。</p>
+      <h2>报告与变更</h2>
+      <p>请勿在公开 Issue 中粘贴 API Key、Cookie、账号信息或私密内容。一般问题可通过<a href="support.html">支持页面</a>提交；安全漏洞请使用 GitHub 私密漏洞报告入口。</p>
+      <p>当 Microsoft Edge 版本的权限、数据读取范围或外部传输方式变化时，本页面会同步更新；新增数据用途时会在扩展界面中重新进行显著披露与同意。其他分发版本请查看<a href="privacy.html">通用隐私说明</a>。</p>
+    </main>
+    <footer class="site-footer"><div class="shell"><span>© <span data-year></span> Reddit 协作回复助手</span><div class="footer-links"><a href="privacy.html">通用隐私</a><a href="support.html">支持</a><a href="https://github.com/EvilIrving/reddit-reply-helper">GitHub</a></div></div></footer>
+    <script src="site.js"></script>
+  </body>
+</html>

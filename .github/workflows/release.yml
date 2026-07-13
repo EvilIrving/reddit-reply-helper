@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-packages
+          path: releases/*.zip
+      - name: 创建 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="release-docs/release-notes-${GITHUB_REF_NAME}.md"
+          if [[ -f "$notes" ]]; then
+            gh release create "$GITHUB_REF_NAME" releases/*.zip --verify-tag --notes-file "$notes"
+          else
+            gh release create "$GITHUB_REF_NAME" releases/*.zip --verify-tag --generate-notes
+          fi

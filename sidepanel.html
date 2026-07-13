@@ -72,6 +72,11 @@
             <span>API Key</span>
             <input name="apiKey" type="password" autocomplete="off" placeholder="sk-..." />
           </label>
+          <label class="field check consent">
+            <input name="aiDataConsent" type="checkbox" />
+            <span>同意将候选帖子、可见评论和主动翻译的文本发送到所填 AI 服务</span>
+          </label>
+          <p class="muted">未同意时只使用本地评分与模板，不会向 AI 服务发送内容。</p>
           <label class="field">
             <span>API Base</span>
             <input name="apiBase" type="text" placeholder="https://api.deepseek.com/v1" />

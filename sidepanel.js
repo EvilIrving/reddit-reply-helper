@@ -67,6 +67,7 @@ async function loadSettingsForm() {
   f.minScore.value = s.minScore ?? 58;
   f.apiBase.value = s.apiBase || '';
   f.apiKey.value = s.apiKey || '';
+  f.aiDataConsent.checked = s.aiDataConsent === true;
   f.model.value = s.model || 'deepseek-chat';
   f.language.value = s.language || 'zh';
   f.persona.value = s.persona || '';
@@ -79,19 +80,27 @@ async function loadSettingsForm() {
 async function onSaveSettings(e) {
   e.preventDefault();
   const f = els.settingsForm;
+  const apiKey = f.apiKey.value.trim();
+  const aiDataConsent = !!f.aiDataConsent.checked;
   const patch = {
     followEnabled: !!f.followEnabled.checked,
     scoringMode: f.scoringMode.value === 'ai' ? 'ai' : 'local',
     minScore: clampNumber(f.minScore.value, 0, 100, 58),
     apiBase: f.apiBase.value.trim() || 'https://api.deepseek.com/v1',
-    apiKey: f.apiKey.value.trim(),
+    apiKey,
+    aiDataConsent,
     model: f.model.value.trim() || 'deepseek-chat',
     language: f.language.value === 'en' ? 'en' : 'zh',
     persona: f.persona.value.trim(),
     cruiseSpeed: f.cruiseSpeed.value || 'normal',
   };
   const res = await chrome.runtime.sendMessage({ type: 'RRH_SAVE_SETTINGS', patch });
-  els.settingsStatus.textContent = res?.ok ? '已保存' : `保存失败：${res?.error || ''}`;
+  els.settingsStatus.textContent = res?.ok
+    ? apiKey && !aiDataConsent
+      ? '已保存；AI 数据发送未启用'
+      : '已保存'
+    : `保存失败：${res?.error || ''}`;
+  els.settingsStatus.classList.toggle('err', !res?.ok);
   if (res?.ok) await loadSettingsForm();
 }
 

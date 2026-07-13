@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "116",
   "name": "Reddit 协作回复助手",
-  "version": "0.3.0",
-  "description": "跟随滚动/巡航发现值得回的帖，DeepSeek 生成评论草稿，每日发帖备选。你确认后手动发送。",
+  "version": "0.4.0",
+  "description": "在 Reddit 浏览时筛选值得参与的讨论，提供中文理解、回复角度与可编辑草稿，由你确认并手动发送。",
   "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
   "host_permissions": [
     "https://www.reddit.com/*",

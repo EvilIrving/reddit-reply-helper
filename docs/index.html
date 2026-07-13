@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ff5728" />
+    <meta name="description" content="在 Reddit 浏览时筛选值得参与的讨论，提供中文理解、回复角度与可编辑草稿，由你确认并手动发送。" />
+    <meta property="og:title" content="Reddit 协作回复助手" />
+    <meta property="og:description" content="少找帖，多参与真实讨论。发现、理解、起草交给助手，发送权始终在你。" />
+    <meta property="og:image" content="assets/store/promo-marquee.png" />
+    <link rel="icon" href="assets/icon-32.png" />
+    <link rel="stylesheet" href="site.css" />
+    <title>Reddit 协作回复助手</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header class="site-header">
+      <div class="shell">
+        <a class="brand" href="index.html" aria-label="Reddit 协作回复助手首页">
+          <img src="assets/icon-48.png" alt="" />
+          <span>Reddit 协作回复助手</span>
+        </a>
+        <nav class="nav" aria-label="主导航">
+          <a href="#how">如何工作</a>
+          <a href="privacy.html">隐私</a>
+          <a class="nav-cta" href="install.html">安装说明</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="shell hero-grid">
+          <div class="hero-copy">
+            <div class="status-line"><span class="status-dot"></span>Chrome 与 Edge 版本准备发布</div>
+            <h1>少找帖，多参与真实讨论。</h1>
+            <p>边刷 Reddit 边筛选值得回复的帖子，快速看懂英文上下文，拿到一个不重复的回复角度。草稿可以改，发送必须由你完成。</p>
+            <div class="actions">
+              <a class="button primary" href="install.html">查看安装方式</a>
+              <a class="button secondary" href="https://github.com/EvilIrving/reddit-reply-helper" rel="noopener">查看源代码</a>
+            </div>
+            <p class="hero-note">免费开源 · 自备 DeepSeek API Key 可启用翻译与 AI 草稿 · 不自动发布</p>
+          </div>
+          <figure class="product-shot">
+            <img src="assets/store/screenshot-overlay.png" alt="Reddit 页面右侧显示中文摘要、新角度和回复草稿的推荐浮层" />
+            <figcaption>真实扩展界面，示例内容仅用于展示。</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <div class="trust-strip">
+        <div class="shell">
+          <strong>最终决定始终由你做</strong>
+          <div class="trust-items" aria-label="产品边界">
+            <span>不自动评论</span><span>不自动发帖</span><span>不自动点赞</span><span>不做多账号互刷</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="section" id="features">
+        <div class="shell">
+          <div class="section-heading">
+            <h2>把最费时间的部分排好。</h2>
+            <p>它不是替你表态的机器人，而是一个贴着 Reddit 页面工作的中文助手，把发现、理解和起草压缩进同一条浏览路径。</p>
+          </div>
+          <div class="feature-stack">
+            <article class="feature-row"><h3>跟着滚动找帖</h3><p>浏览主页或任意 subreddit 时增量分析新帖，达到阈值才进入推荐；需要时也能开启慢速巡航。</p><b>↘</b></article>
+            <article class="feature-row"><h3>先看中文重点</h3><p>浮层直接给出中文标题、正文摘要、回复提醒和一个可编辑草稿，不必在多个工具之间来回复制。</p><b>译</b></article>
+            <article class="feature-row"><h3>避开已有观点</h3><p>详情页只读取当前已加载的可见评论，归纳已覆盖方向，再提供一个尚未充分表达的角度。</p><b>24</b></article>
+            <article class="feature-row"><h3>想不清就先收着</h3><p>跳过、暂存、打开和写回复都在当前路径上；新推荐静默进入待办，不打断手头判断。</p><b>+</b></article>
+            <article class="feature-row"><h3>中文写完再转英文</h3><p>评论或发帖编辑器里可把中文自然翻译成英文并回填，原文出错时不会被覆盖，也不会触发发送。</p><b>中</b></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt" id="how">
+        <div class="shell">
+          <div class="section-heading">
+            <h2>一次回复，三步完成。</h2>
+            <p>正常浏览即可开始，不要求固定 subreddit，也不需要把发送权交给扩展。</p>
+          </div>
+          <div class="steps">
+            <article class="step"><span>01</span><h3>浏览</h3><p>扩展从当前 Reddit 页面读取已经显示的帖子，先在本地评分。</p></article>
+            <article class="step"><span>02</span><h3>判断</h3><p>看中文摘要、已有讨论空间和一个新角度，决定回复、暂存还是跳过。</p></article>
+            <article class="step"><span>03</span><h3>手动发送</h3><p>草稿只会填进空编辑器；你检查、修改，并亲自点击评论或发布。</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="screens-title">
+        <div class="shell">
+          <div class="section-heading">
+            <h2 id="screens-title">信息够用，界面不抢注意力。</h2>
+            <p>页内浮层处理当前推荐，侧栏负责待办、每日发帖备选与设置；常驻入口只有一个。</p>
+          </div>
+          <div class="gallery">
+            <figure><img src="assets/store/screenshot-queue.png" alt="扩展侧栏中的回复待办队列" /></figure>
+            <figure><img src="assets/store/screenshot-daily.png" alt="扩展侧栏中的三个每日发帖候选" /></figure>
+            <figure><img src="assets/store/screenshot-settings.png" alt="扩展侧栏中的本地与 AI 设置" /></figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt">
+        <div class="shell boundary-grid">
+          <div><h2>协作，不是无人值守。</h2><p>产品边界不是一句免责声明，而是写进实际交互的限制。</p></div>
+          <div class="boundary-copy">
+            <div class="boundary-item"><strong>发送动作不会被调用</strong><p>写回复只定位并填入空评论框；已有输入不会被覆盖。</p></div>
+            <div class="boundary-item"><strong>巡航默认关闭</strong><p>巡航需要手动开始，速度可调，可随时停止，不自动点赞或互动。</p></div>
+            <div class="boundary-item"><strong>失败时继续可用</strong><p>没有 API Key、没有同意数据发送或 AI 请求失败时，仍可使用本地评分和模板。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="privacy-title">
+        <div class="shell">
+          <div class="section-heading">
+            <h2 id="privacy-title">数据流讲清楚。</h2>
+            <p>设置、Key 和队列保存在浏览器本地；只有在你明确同意后，候选内容和主动翻译文本才会发送到所填 AI 服务。</p>
+          </div>
+          <div class="data-flow">
+            <div class="data-node"><strong>Reddit 当前页面</strong><p>读取当前可见帖子、已加载评论和最近访问的 subreddit。</p></div>
+            <div class="data-node"><strong>浏览器本地</strong><p>保存设置、API Key、队列、处理记录与每日候选。</p></div>
+            <div class="data-node optional"><strong>可选 AI 服务</strong><p>明确同意后发送必要文本，默认使用 DeepSeek；项目维护者不运营中转服务器。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt">
+        <div class="shell faq">
+          <h2>常见问题</h2>
+          <details><summary>它会自动发评论或帖子吗？</summary><p>不会。扩展最多把草稿安全填入空编辑器，最终检查与发送只能由用户完成。</p></details>
+          <details><summary>必须配置 DeepSeek 吗？</summary><p>不必须。本地评分、队列与模板不需要 API Key；翻译、AI 摘要、避重新角度和 AI 草稿需要用户自己的 Key，并需要单独同意数据发送。</p></details>
+          <details><summary>会检查整篇帖子所有评论吗？</summary><p>不会。扩展只读取当前页面已经加载且可见的评论，最多 24 条，并在界面显示本次实际参考数量。</p></details>
+          <details><summary>这是 Reddit 官方产品吗？</summary><p>不是。本项目是独立的非官方工具，与 Reddit 或 DeepSeek 无隶属、赞助或背书关系。</p></details>
+        </div>
+      </section>
+
+      <section class="final-cta">
+        <div class="shell">
+          <h2>先把一条回复写好。</h2>
+          <a class="button primary" href="install.html">查看安装说明</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell">
+        <span>© <span data-year></span> Reddit 协作回复助手</span>
+        <div class="footer-links"><a href="privacy.html">隐私</a><a href="support.html">支持</a><a href="https://github.com/EvilIrving/reddit-reply-helper">GitHub</a></div>
+      </div>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

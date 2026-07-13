@@ -4,6 +4,8 @@
 
 > 本项目是非官方工具，与 Reddit 或 DeepSeek 无隶属、赞助或背书关系。
 
+[产品官网](https://evilirving.github.io/reddit-reply-helper/) · [安装说明](https://evilirving.github.io/reddit-reply-helper/install.html) · [隐私说明](https://evilirving.github.io/reddit-reply-helper/privacy.html) · [支持](https://evilirving.github.io/reddit-reply-helper/support.html)
+
 ## 功能
 
 - 跟随页面滚动增量分析帖子，也可手动开启慢速巡航。
@@ -18,9 +20,11 @@
 
 ## 安装
 
-1. 下载或克隆本仓库。
+商店审核通过后会补充 Chrome Web Store 与 Microsoft Edge Add-ons 链接，当前可从 [GitHub Releases](https://github.com/EvilIrving/reddit-reply-helper/releases) 获取手动安装包。
+
+1. 下载对应浏览器的 ZIP 并解压，或克隆本仓库。
 2. 在 Chrome 或 Edge 扩展管理页打开开发者模式。
-3. 选择“加载已解压的扩展程序”，指向仓库根目录。
+3. 选择“加载已解压的扩展程序”，指向解压目录或仓库根目录。
 4. 点击扩展图标打开侧栏，按需填写 DeepSeek API Key。
 5. 打开 Reddit 列表页并硬刷新一次，使 content script 生效。
 
@@ -38,7 +42,7 @@
 
 ## DeepSeek 与数据处理
 
-默认 API Base 为 `https://api.deepseek.com/v1`，默认模型为 `deepseek-chat`。API Key、设置、队列和浏览记录保存在 `chrome.storage.local`；配置 Key 后，AI 原生评分会把一批待评估帖子的 subreddit、标题、部分正文、发布时间、互动数字和详情页已加载的可见评论发送到 DeepSeek，候选生成阶段还会发送详情页最多 24 条已加载的可见评论，用于评分、翻译、摘要、提醒、新角度与避重草稿；用户主动点击中译英时，编辑器文本也会发送到 DeepSeek。
+默认 API Base 为 `https://api.deepseek.com/v1`，默认模型为 `deepseek-chat`。API Key、AI 数据发送同意状态、设置、队列和浏览记录保存在浏览器本地；只有在用户明确勾选同意后，AI 原生评分才会把一批待评估帖子的 subreddit、标题、部分正文、发布时间、互动数字和详情页已加载的可见评论发送到 DeepSeek，候选生成阶段还会发送详情页最多 24 条已加载的可见评论，用于评分、翻译、摘要、提醒、新角度与避重草稿；用户主动点击中译英时，编辑器文本也会发送到 DeepSeek。
 
 项目维护者不运营中转服务器，也不接收这些数据。完整说明见 [隐私说明](PRIVACY.md)。
 
@@ -54,10 +58,16 @@
 
 ## 开发与校验
 
-项目使用原生 JavaScript、HTML 与 CSS，不需要安装依赖或构建。提交前运行：
+项目使用原生 JavaScript、HTML 与 CSS，运行扩展不需要安装依赖。提交前运行：
 
 ```bash
 node scripts/validate.mjs
+```
+
+生成并检查 Chrome、Edge 与 GitHub 发布包：
+
+```bash
+npm run release
 ```
 
 涉及页面脚本或界面的改动仍需在真实 Reddit 页面手动验证，包括新版页面与 `old.reddit.com`。
@@ -70,6 +80,9 @@ content/               帖子与可见评论解析、浮层、编辑器中译英
 lib/                   打分、AI、翻译、观点避重、草稿、队列与每日备选
 sidepanel.*            队列、今日发帖与设置界面
 scripts/validate.mjs   清单引用与敏感密钥校验
+scripts/package.mjs    Chrome、Edge 与 GitHub 发布包
+docs/                  GitHub Pages 官网、隐私与支持页面
+release-docs/          商店文案、审核说明与发布材料
 ```
 
 ## 参与贡献

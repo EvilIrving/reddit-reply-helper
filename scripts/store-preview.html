@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>商店素材预览</title>
+    <style>
+      :root {
+        font-family: "Avenir Next", "PingFang SC", system-ui, sans-serif;
+        color-scheme: dark;
+        --orange: #ff5728;
+        --ink: #111319;
+        --paper: #f4f5f7;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; overflow: hidden; background: #111319; }
+      .shot { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+      .browser {
+        position: absolute; inset: 34px 34px 28px; overflow: hidden;
+        border-radius: 14px; background: #f5f6f7; color: #202124;
+        box-shadow: 0 8px 0 rgba(0,0,0,.28);
+      }
+      .browser-bar {
+        display: flex; height: 50px; align-items: center; gap: 16px;
+        padding: 0 18px; background: #dee1e5; border-bottom: 1px solid #c8ccd2;
+      }
+      .traffic { display: flex; gap: 7px; }
+      .traffic i { width: 10px; height: 10px; border-radius: 50%; background: #9ca2aa; }
+      .address { flex: 1; max-width: 690px; padding: 7px 15px; border-radius: 999px; background: #fff; color: #737981; font-size: 12px; }
+      .reddit-head { display: flex; height: 50px; align-items: center; padding: 0 26px; border-bottom: 1px solid #e1e3e6; font-weight: 750; }
+      .reddit-head b { color: var(--orange); margin-right: 9px; font-size: 21px; }
+      .feed { width: min(720px, 68vw); margin: 18px auto; }
+      .post { margin-bottom: 10px; padding: 17px 19px; border: 1px solid #dadddf; border-radius: 8px; background: #fff; }
+      .post small { color: #707780; }
+      .post h2 { margin: 8px 0; font-size: 17px; }
+      .post p { margin: 0; color: #646a72; font-size: 13px; }
+      .brand-stamp { position: absolute; left: 54px; bottom: 48px; z-index: 3; display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 14px; font-weight: 720; }
+      .brand-stamp img { width: 34px; height: 34px; border-radius: 9px; }
+      .side-scene { background: var(--orange); color: var(--ink); }
+      .side-copy { position: absolute; left: 7vw; top: 50%; width: 42vw; transform: translateY(-50%); }
+      .side-copy h1 { max-width: 10ch; margin: 0 0 24px; font-size: clamp(50px, 5.2vw, 66px); line-height: 1.06; letter-spacing: -.025em; }
+      .side-copy p { max-width: 38ch; margin: 0; font-size: 20px; font-weight: 580; line-height: 1.55; }
+      .side-copy .mark { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; font-weight: 750; }
+      .side-copy .mark img { width: 42px; height: 42px; border-radius: 10px; }
+      .panel-frame { position: absolute; right: 7vw; top: 36px; width: 410px; height: 728px; border: 0; border-radius: 12px; background: #101216; box-shadow: 0 8px 0 rgba(18,8,4,.35); }
+      .promo { display: flex; align-items: center; justify-content: space-between; padding: 9%; background: var(--orange); color: var(--ink); }
+      .promo-copy { position: relative; z-index: 2; }
+      .promo .mark { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; font-weight: 800; }
+      .promo .mark img { width: 58px; height: 58px; border-radius: 14px; }
+      .promo h1 { max-width: 9ch; margin: 0; font-size: clamp(38px, 6.4vw, 78px); line-height: 1.02; letter-spacing: -.03em; }
+      .promo p { max-width: 32ch; margin: 20px 0 0; font-size: clamp(14px, 1.7vw, 22px); font-weight: 650; }
+      .promo-orbit { width: 34vw; aspect-ratio: 1; border: 72px solid rgba(17,19,25,.13); border-radius: 50%; transform: translateX(18%); }
+      body.small .promo { padding: 28px; }
+      body.small .promo .mark { gap: 9px; margin-bottom: 14px; font-size: 12px; }
+      body.small .promo .mark img { width: 34px; height: 34px; border-radius: 8px; }
+      body.small .promo h1 { font-size: 34px; }
+      body.small .promo p { margin-top: 10px; font-size: 12px; }
+      body.small .promo-orbit { width: 175px; border-width: 38px; }
+    </style>
+  </head>
+  <body>
+    <main id="root" class="shot"></main>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const scene = params.get('scene') || 'overlay';
+      const root = document.getElementById('root');
+      const copy = {
+        queue: ['值得回的帖子，先排好。', '待处理与已处理分开，当前只展开一项。想不清可以先收着，继续浏览。'],
+        daily: ['每天三个备选，不替你发。', '从最近访问的 subreddit 里准备完整标题、正文与理由，合适再采用。'],
+        settings: ['AI 可选，发送前先同意。', '本地功能无需 Key；帖子与翻译文本只有在明确同意后才会发往所填 AI 服务。'],
+      };
+
+      if (scene === 'overlay') {
+        root.innerHTML = `
+          <section class="browser">
+            <div class="browser-bar"><span class="traffic"><i></i><i></i><i></i></span><div class="address">reddit.com/r/macapps/</div></div>
+            <div class="reddit-head"><b>●</b>reddit <span style="margin-left:auto;color:#757b83;font-size:12px">r/macapps</span></div>
+            <div class="feed">
+              <article class="post"><small>r/macapps · 2 小时前</small><h2>What small Mac utility ended up changing your daily workflow?</h2><p>I keep discovering tiny apps that solve one oddly specific problem...</p></article>
+              <article class="post"><small>r/productivity · 4 小时前</small><h2>How do you keep a system useful without turning it into another job?</h2><p>Every setup works for a week, then maintaining it becomes the work.</p></article>
+              <article class="post"><small>r/AskReddit · 6 小时前</small><h2>What's a boring skill that quietly made your life easier?</h2></article>
+            </div>
+          </section>
+          <div class="brand-stamp"><img src="/icons/icon-48.png" alt="" />Reddit 协作回复助手</div>`;
+        const script = document.createElement('script');
+        script.src = '/content/overlay.js';
+        script.onload = () => {
+          globalThis.RRH_OVERLAY.show({
+            id: 'demo-1',
+            post: { id: 'demo-1', subreddit: 'macapps', recommendScore: 78, url: 'https://www.reddit.com/r/macapps/comments/demo/' },
+            titleZh: '哪个不起眼的 Mac 小工具真正改变了你的日常工作流？',
+            bodyZh: '楼主想找解决单一小问题、但会长期留下来的轻量工具。',
+            freshAngle: '聊一个你后来停用的工具，以及真正卡住你的细节',
+            commentsReviewed: 18,
+            tips: ['具体说清使用前后的变化', '避免只报应用名'],
+            draft: '我反而想到一个最后没留下来的工具。功能本身很好，但每次都要先整理输入，久了这一步就比它省下的时间还多。后来换成更笨但随手能用的方法，反而坚持下来了。'
+          }, { pending: 3 });
+        };
+        document.body.appendChild(script);
+      } else if (copy[scene]) {
+        root.classList.add('side-scene');
+        root.innerHTML = `<div class="side-copy"><div class="mark"><img src="/icons/icon-48.png" alt="" />Reddit 协作回复助手</div><h1>${copy[scene][0]}</h1><p>${copy[scene][1]}</p></div><iframe class="panel-frame" src="/sidepanel.html" title="扩展侧栏"></iframe>`;
+        const frame = root.querySelector('iframe');
+        frame.addEventListener('load', () => {
+          if (scene === 'daily') frame.contentDocument.querySelector('[data-tab="daily"]')?.click();
+          if (scene === 'settings') frame.contentDocument.querySelector('[data-tab="settings"]')?.click();
+        });
+      } else {
+        const small = scene === 'promo-small';
+        document.body.classList.toggle('small', small);
+        root.classList.add('promo');
+        root.innerHTML = `<div class="promo-copy"><div class="mark"><img src="/icons/icon-128.png" alt="" />Reddit 协作回复助手</div><h1>少找帖，多参与真实讨论。</h1><p>中文理解、回复角度与可编辑草稿，由你确认并手动发送。</p></div><div class="promo-orbit" aria-hidden="true"></div>`;
+      }
+    </script>
+  </body>
+</html>

@@ -7,7 +7,7 @@
 1. Fork 仓库并从 `main` 创建主题分支。
 2. 在 `chrome://extensions` 中打开开发者模式，选择“加载已解压的扩展程序”。
 3. 修改后重新加载扩展，并硬刷新 Reddit 页面。
-4. 运行 `node scripts/validate.mjs`，再手动验证受影响的功能。
+4. 运行 `npm run validate`，再手动验证受影响的功能；涉及发布工程时还要运行 `npm run release`。
 5. 提交范围清晰的 Pull Request，说明动机、测试结果和界面改动截图。
 
 ## 产品边界
@@ -17,4 +17,3 @@
 ## 代码约定
 
 项目当前使用原生 JavaScript、HTML 与 CSS，不需要构建步骤。保持改动聚焦，兼顾新版 Reddit 的 `shreddit-post` 与 `old.reddit.com`，浮层样式继续使用 Shadow DOM 隔离。
-
