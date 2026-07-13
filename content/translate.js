@@ -4,6 +4,8 @@
  */
 (function () {
   const BUTTON_CLASS = 'rrh-translate-btn';
+  const HANDOFF_KEY = 'rrh_composer_handoff';
+  const COMPOSER = (globalThis.RRH_COMPOSER = globalThis.RRH_COMPOSER || {});
   const ICON = `
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
@@ -25,6 +27,8 @@
   const styledRoots = new WeakSet();
 
   document.addEventListener('focusin', rememberEditor, true);
+  COMPOSER.fill = fillComposer;
+  COMPOSER.queue = queueComposerDraft;
   scan();
   setInterval(scan, 1800);
 
@@ -33,6 +37,7 @@
     for (const node of path) {
       if (node?.matches?.('[contenteditable][data-lexical-editor]')) {
         lastEditor = node;
+        fillQueuedDraft(node);
         return;
       }
     }
@@ -41,6 +46,81 @@
   function scan() {
     for (const toolbar of deepQueryAll('rte-toolbar')) injectNewReddit(toolbar);
     injectOldReddit();
+    fillQueuedDraft();
+  }
+
+  function queueComposerDraft(payload) {
+    const draft = String(payload?.draft || '').trim();
+    if (!draft) return false;
+    sessionStorage.setItem(
+      HANDOFF_KEY,
+      JSON.stringify({
+        id: String(payload?.id || ''),
+        draft,
+        at: Date.now(),
+      })
+    );
+    return true;
+  }
+
+  function fillComposer(text, preferredEditor) {
+    const draft = String(text || '').trim();
+    if (!draft) return false;
+    const editor = preferredEditor || findWritableEditor();
+    if (!editor || getFieldText(editor)) return false;
+    if (editor.matches?.('[contenteditable]')) setBody(editor, draft);
+    else setNativeValue(editor, draft);
+    return getFieldText(editor).length > 0;
+  }
+
+  function fillQueuedDraft(preferredEditor) {
+    const queued = readQueuedDraft();
+    if (!queued || !pageMatchesPost(queued.id)) return false;
+    if (!fillComposer(queued.draft, preferredEditor)) return false;
+    sessionStorage.removeItem(HANDOFF_KEY);
+    notify('草稿已填入，请检查后手动发送');
+    return true;
+  }
+
+  function readQueuedDraft() {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(HANDOFF_KEY) || 'null');
+      if (!value?.draft || Date.now() - Number(value.at || 0) > 30 * 60 * 1000) {
+        sessionStorage.removeItem(HANDOFF_KEY);
+        return null;
+      }
+      return value;
+    } catch {
+      sessionStorage.removeItem(HANDOFF_KEY);
+      return null;
+    }
+  }
+
+  function pageMatchesPost(id) {
+    return !id || new RegExp(`/comments/${escapeRegExp(id)}(?:/|$)`, 'i').test(location.pathname);
+  }
+
+  function findWritableEditor() {
+    if (lastEditor?.isConnected && isVisible(lastEditor)) return lastEditor;
+    const editors = deepQueryAll('[contenteditable][data-lexical-editor]');
+    const emptyEditor = editors.find((editor) => isVisible(editor) && !getEditorText(editor));
+    if (emptyEditor) return emptyEditor;
+    return [...document.querySelectorAll('.usertext-edit textarea, textarea[name="text"]')]
+      .find((field) => isVisible(field) && !field.value.trim()) || null;
+  }
+
+  function getFieldText(field) {
+    return field?.matches?.('[contenteditable]')
+      ? getEditorText(field)
+      : String(field?.value || '').trim();
+  }
+
+  function isVisible(element) {
+    return !!(element?.offsetWidth || element?.offsetHeight || element?.getClientRects?.().length);
+  }
+
+  function escapeRegExp(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   function injectNewReddit(toolbar) {

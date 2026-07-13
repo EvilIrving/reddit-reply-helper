@@ -45,6 +45,10 @@
   refreshPendingFromSw();
 
   O()?.setActionHandler?.((action, payload) => {
+    if (action === 'fill') {
+      fillReplyComposer(payload);
+      return;
+    }
     if (action === 'locate') {
       S()?.highlightPost?.(payload.id);
       return;
@@ -89,6 +93,27 @@
       setTimeout(() => runAnalyze(false), 400);
     }
   });
+
+  function fillReplyComposer(payload) {
+    const draft = String(payload?.draft || '').trim();
+    if (!draft) {
+      O()?.notify?.('草稿为空');
+      return;
+    }
+    if (globalThis.RRH_COMPOSER?.fill?.(draft)) {
+      O()?.hide?.();
+      O()?.notify?.('草稿已填入，请检查后手动发送');
+      return;
+    }
+    globalThis.RRH_COMPOSER?.queue?.(payload);
+    const target = String(payload?.url || '');
+    if (target && target !== location.href) {
+      location.assign(target);
+    } else {
+      O()?.hide?.();
+      O()?.notify?.('点击评论框后会自动填入草稿');
+    }
+  }
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (!msg?.type) return;
@@ -180,6 +205,12 @@
 
     if (msg.type === 'RRH_OPEN_NEXT') {
       openNextFromQueue().then(() => sendResponse({ ok: true }));
+      return true;
+    }
+
+    if (msg.type === 'RRH_FILL_REPLY') {
+      fillReplyComposer(msg);
+      sendResponse({ ok: true });
       return true;
     }
   });

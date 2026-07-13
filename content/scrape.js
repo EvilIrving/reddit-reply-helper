@@ -4,6 +4,7 @@
  */
 (function () {
   const RRH = (globalThis.RRH_SCRAPE = globalThis.RRH_SCRAPE || {});
+  let highlightTimer = 0;
 
   /**
    * @returns {Array<object>}
@@ -89,6 +90,8 @@
     if (!el) return false;
     el.classList.add('rrh-highlight');
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    clearTimeout(highlightTimer);
+    highlightTimer = window.setTimeout(() => el.classList.remove('rrh-highlight'), 2200);
     return true;
   };
 

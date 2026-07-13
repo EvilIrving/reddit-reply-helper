@@ -10,6 +10,8 @@
   let currentItem = null;
   /** @type {number} */
   let pendingCount = 0;
+  /** @type {string} */
+  let cruiseStatus = '';
   /** @type {(action: string, payload?: any) => void} */
   let onAction = () => {};
 
@@ -22,13 +24,13 @@
 
     .hidden { display: none !important; }
 
-    /* —— Overlay card —— */
+    /* —— Recommendation panel —— */
     .panel {
       position: fixed;
       right: 16px;
       top: 64px;
       z-index: 2147483647;
-      width: min(360px, calc(100vw - 24px));
+      width: min(348px, calc(100vw - 24px));
       max-height: calc(100vh - 120px);
       overflow: auto;
       color: #e8eaed;
@@ -40,14 +42,13 @@
       background: #1a1a1b;
       border: 1px solid #3a3a3c;
       border-radius: 12px;
-      padding: 12px;
-      box-shadow: 0 12px 40px rgba(0,0,0,.5);
+      padding: 14px;
     }
     .head {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     .pill {
       flex: 0 0 auto;
@@ -82,74 +83,55 @@
       padding: 0;
     }
     .x:hover { background: #2a2a2b; color: #fff; }
-
-    .block {
-      background: #0f0f10;
-      border: 1px solid #2e2e30;
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 8px;
+    .x:focus-visible,
+    .btn:focus-visible,
+    .assistant-btn:focus-visible {
+      outline: 2px solid #ff8a5c;
+      outline-offset: 2px;
     }
     .title {
-      margin: 0 0 6px;
-      font-size: 14px;
+      margin: 0 0 12px;
+      font-size: 15px;
       font-weight: 650;
       color: #f0f0f0;
-      line-height: 1.35;
+      line-height: 1.4;
       word-break: break-word;
+      text-wrap: pretty;
     }
     .body {
-      margin: 0;
+      margin: -4px 0 12px;
+      color: #a8a8aa;
       font-size: 12px;
-      color: #a0a0a2;
-      word-break: break-word;
       white-space: pre-wrap;
+      word-break: break-word;
     }
-    .meta {
-      margin: 0 0 8px;
+    .angle {
+      margin: 0 0 12px;
+      padding: 10px 0;
+      border-top: 1px solid #303033;
+      border-bottom: 1px solid #303033;
+      color: #d7dadc;
+      font-size: 12px;
+    }
+    .angle strong { color: #b6d7b2; }
+    .angle small {
+      display: block;
+      margin-top: 4px;
+      color: #9a9a9b;
       font-size: 11px;
-      color: #7c7c7e;
     }
     .tips {
-      margin: 0 0 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: rgba(106,167,255,.08);
-      border: 1px solid rgba(106,167,255,.22);
-    }
-    .tips ul {
-      margin: 0;
-      padding-left: 16px;
-      color: #c4c4c6;
+      margin: -4px 0 12px;
+      color: #b8b8ba;
       font-size: 11px;
     }
-    .tips li { margin: 2px 0; }
-    .angle {
-      margin: 0 0 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #20261f;
-      color: #d9ead6;
-      font-size: 12px;
-    }
-    .angle strong { color: #9fd49a; }
 
     .label {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       font-size: 11px;
       color: #9a9a9b;
-      margin: 4px 0 4px;
-    }
-    .link {
-      border: 0;
-      background: none;
-      color: #6aa7ff;
-      cursor: pointer;
-      font-size: 11px;
-      padding: 0;
-      font-family: inherit;
+      margin: 0 0 5px;
     }
     .ta {
       display: block;
@@ -165,20 +147,15 @@
       resize: vertical;
     }
     .ta:focus {
-      outline: none;
+      outline: 2px solid rgba(255,69,0,.3);
+      outline-offset: 1px;
       border-color: #ff4500;
     }
-
-    .row {
+    .actions {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 6px;
-      margin-bottom: 6px;
-    }
-    .row2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
+      align-items: center;
     }
     .btn {
       display: inline-flex;
@@ -196,96 +173,62 @@
       white-space: nowrap;
     }
     .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: translateY(1px); }
     .btn.primary {
+      grid-column: span 9;
       background: #ff4500;
       border-color: #ff4500;
       color: #fff;
     }
-    .btn.danger {
+    .btn.secondary {
+      grid-column: span 3;
       background: transparent;
-      border-color: #8a4040;
-      color: #f09090;
+      color: #d7dadc;
     }
-    .btn.stash {
-      background: #1e2a3a;
-      border-color: #3d6a9e;
-      color: #8ec0ff;
+    .btn.utility {
+      grid-column: span 4;
+      background: transparent;
+      color: #b8b8ba;
+      font-weight: 500;
     }
+    .btn.skip { color: #f0a0a0; }
 
-    /* —— Dock —— */
+    /* —— Single persistent assistant entry —— */
     .dock {
       position: fixed;
       right: 16px;
-      bottom: 62px;
+      bottom: 16px;
       z-index: 2147483646;
-      display: flex;
-      gap: 6px;
-      opacity: 0.5;
       pointer-events: auto;
     }
-    .dock.has { opacity: 1; }
-    .dock-btn {
-      height: 34px;
-      padding: 0 12px;
+    .assistant-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 36px;
+      padding: 0 11px;
       border: 1px solid #3a3a3c;
       border-radius: 999px;
       background: #1a1a1b;
       color: #d7dadc;
       font: 600 12px/1 inherit;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0,0,0,.3);
+      box-shadow: 0 3px 8px rgba(0,0,0,.28);
     }
-    .dock.has .dock-main {
-      background: #ff4500;
-      border-color: #ff4500;
-      color: #fff;
-    }
-
-    /* —— Cruise bar —— */
-    .cruise {
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      z-index: 2147483646;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      pointer-events: none;
-    }
-    .cruise > * { pointer-events: auto; }
-    .cruise-btn {
-      height: 36px;
-      padding: 0 14px;
-      border: 0;
+    .assistant-btn:hover { background: #242426; color: #fff; }
+    .assistant-btn:active { transform: translateY(1px); }
+    .pending-count {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
       border-radius: 999px;
       background: #ff4500;
       color: #fff;
-      font: 600 12px/1 inherit;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0,0,0,.28);
+      font-size: 10px;
+      line-height: 18px;
+      text-align: center;
     }
-    .cruise-btn.ghost {
-      background: #1a1a1b;
-      border: 1px solid #3a3a3c;
-      color: #e8eaed;
-    }
-    .cruise-btn.active {
-      background: #1a1a1b;
-      border: 1px solid #ff4500;
-      color: #fff;
-    }
-    .chip {
-      max-width: 140px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.78);
-      color: #eee;
-      font-size: 11px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .chip:empty { display: none; }
+    .pending-count[hidden] { display: none; }
 
     /* —— Toast —— */
     .toast {
@@ -309,6 +252,11 @@
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .toast { transition: none; }
+      .btn:active,
+      .assistant-btn:active { transform: none; }
     }
   `;
 
@@ -338,7 +286,8 @@
     const u = ui();
     if (!u) return;
     if (u.pendingN) u.pendingN.textContent = String(pendingCount);
-    u.dock?.classList.toggle('has', pendingCount > 0);
+    u.pendingN?.toggleAttribute('hidden', pendingCount === 0);
+    updateAssistantLabel(u);
   };
 
   /**
@@ -367,12 +316,11 @@
     const post = item.post;
     const draft = item.draft || (item.drafts && item.drafts[0]) || '';
     const titleZh = item.titleZh || post.title || '';
-    const bodyZh = item.bodyZh || clip(post.body || '', 160) || '（无正文或图帖）';
-    const tips = (item.tips || post.reasons || []).slice(0, 4);
-    const tipsHtml = tips.map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+    const bodyZh = item.bodyZh || '';
     const freshAngle = item.freshAngle || '';
+    const tips = (item.tips || []).slice(0, 2);
     const reviewed = Number(item.commentsReviewed) || 0;
-    const url = post.url || '#';
+    const url = discussionUrl(post);
 
     u.panel.classList.remove('hidden');
     u.panel.innerHTML = `
@@ -380,28 +328,20 @@
         <div class="head">
           <span class="pill">${escapeHtml(String(post.recommendScore ?? '—'))}分</span>
           <span class="sub">r/${escapeHtml(post.subreddit || '?')}</span>
-          <button type="button" class="x" data-act="stash" aria-label="先收着">×</button>
+          <button type="button" class="x" data-act="close" aria-label="关闭推荐">×</button>
         </div>
-        <div class="block">
-          <h3 class="title">${escapeHtml(titleZh)}</h3>
-          <p class="body">${escapeHtml(bodyZh)}</p>
-        </div>
-        <p class="meta">${escapeHtml(metaLine(post))}</p>
-        ${freshAngle ? `<p class="angle"><strong>新角度：</strong>${escapeHtml(freshAngle)}${reviewed ? `<br><span>已参考 ${reviewed} 条现有评论避重</span>` : ''}</p>` : ''}
-        ${tipsHtml ? `<div class="tips"><ul>${tipsHtml}</ul></div>` : ''}
-        <div class="label">
-          <span>草稿</span>
-          <button type="button" class="link" data-act="copy">复制</button>
-        </div>
-        <textarea class="ta" data-draft rows="3">${escapeHtml(draft)}</textarea>
-        <div class="row">
-          <button type="button" class="btn primary" data-act="locate">定位</button>
-          <a class="btn" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" data-act="open">打开</a>
-          <button type="button" class="btn" data-act="copy">复制</button>
-        </div>
-        <div class="row2">
-          <button type="button" class="btn danger" data-act="skip">跳过</button>
-          <button type="button" class="btn stash" data-act="stash">先收着</button>
+        <h3 class="title">${escapeHtml(titleZh)}</h3>
+        ${bodyZh ? `<p class="body">${escapeHtml(bodyZh)}</p>` : ''}
+        ${freshAngle ? `<p class="angle"><strong>新角度：</strong>${escapeHtml(freshAngle)}${reviewed ? `<small>参考 ${reviewed} 条当前可见评论</small>` : ''}</p>` : ''}
+        ${tips.length ? `<p class="tips">${escapeHtml(tips.join(' · '))}</p>` : ''}
+        <label class="label" for="rrh-draft">回复草稿</label>
+        <textarea class="ta" id="rrh-draft" data-draft rows="4">${escapeHtml(draft)}</textarea>
+        <div class="actions">
+          <button type="button" class="btn primary" data-act="fill">写回复</button>
+          <button type="button" class="btn secondary" data-act="stash">先收着</button>
+          <button type="button" class="btn utility" data-act="locate">定位</button>
+          <a class="btn utility" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" data-act="open">打开</a>
+          <button type="button" class="btn utility skip" data-act="skip">跳过</button>
         </div>
       </div>
     `;
@@ -410,7 +350,6 @@
       el.addEventListener('click', (e) => {
         const act = el.getAttribute('data-act');
         if (act === 'open') {
-          // let default open in new tab; still mark nothing
           e.stopPropagation();
           return;
         }
@@ -428,18 +367,8 @@
 
   RRH.setCruiseUi = function ({ cruiseOn, cruisePaused, status }) {
     const u = ui();
-    if (!u?.cruiseToggle) return;
-    if (!cruiseOn) {
-      u.cruiseToggle.textContent = '开始巡航';
-      u.cruiseToggle.classList.remove('active');
-    } else if (cruisePaused) {
-      u.cruiseToggle.textContent = '停止巡航';
-      u.cruiseToggle.classList.add('active');
-    } else {
-      u.cruiseToggle.textContent = '停止巡航';
-      u.cruiseToggle.classList.add('active');
-    }
-    if (u.chip) u.chip.textContent = status || '';
+    cruiseStatus = cruiseOn ? status || (cruisePaused ? '巡航暂停' : '巡航中') : '';
+    if (u) updateAssistantLabel(u);
   };
 
   RRH.onCruiseToggle = null;
@@ -447,14 +376,20 @@
   RRH.notify = showToast;
 
   function handleAct(act) {
-    if (!currentItem && act !== 'side' && act !== 'next' && act !== 'dock-side') return;
+    if (!currentItem && !['side', 'next', 'dock-side', 'assistant'].includes(act)) return;
     const ta = ui()?.panel?.querySelector('[data-draft]');
     const draft = /** @type {HTMLTextAreaElement|null} */ (ta)?.value || '';
 
-    if (act === 'copy') {
-      copyText(draft);
-      onAction('copied', { id: currentItem.id, draft, keepOpen: true });
-      showToast('已复制');
+    if (act === 'close') {
+      RRH.hide();
+      return;
+    }
+    if (act === 'fill') {
+      onAction('fill', {
+        id: currentItem.id,
+        draft,
+        url: discussionUrl(currentItem.post),
+      });
       return;
     }
     if (act === 'locate') {
@@ -480,6 +415,16 @@
       onAction('side', { id: currentItem?.id });
       return;
     }
+    if (act === 'assistant') {
+      if (RRH.isOpen()) {
+        RRH.hide();
+      } else if (pendingCount > 0) {
+        onAction('request-next', {});
+      } else {
+        onAction('side', {});
+      }
+      return;
+    }
     if (act === 'next') {
       onAction('request-next', {});
     }
@@ -491,9 +436,7 @@
    *  panel: HTMLElement,
    *  dock: HTMLElement,
    *  pendingN: HTMLElement,
-   *  cruiseToggle: HTMLElement,
-   *  scanBtn: HTMLElement,
-   *  chip: HTMLElement,
+   *  assistant: HTMLElement,
    *  toast: HTMLElement
    * } | null}
    */
@@ -513,13 +456,10 @@
         <style>${STYLES}</style>
         <div class="panel hidden" id="panel"></div>
         <div class="dock" id="dock">
-          <button type="button" class="dock-btn dock-main" data-act="next">待办 <span id="pendingN">0</span></button>
-          <button type="button" class="dock-btn" data-act="dock-side">列表</button>
-        </div>
-        <div class="cruise" id="cruise">
-          <button type="button" class="cruise-btn" id="cruiseToggle">开始巡航</button>
-          <button type="button" class="cruise-btn ghost" id="scanBtn">立即分析</button>
-          <span class="chip" id="chip"></span>
+          <button type="button" class="assistant-btn" id="assistant" data-act="assistant" aria-label="Reddit 助手">
+            <span>助手</span>
+            <span class="pending-count" id="pendingN" hidden>0</span>
+          </button>
         </div>
         <div class="toast" id="toast"></div>
       `;
@@ -530,12 +470,6 @@
         e.preventDefault();
         handleAct(t.getAttribute('data-act'));
       });
-      shadow.getElementById('cruiseToggle')?.addEventListener('click', () => {
-        if (typeof RRH.onCruiseToggle === 'function') RRH.onCruiseToggle();
-      });
-      shadow.getElementById('scanBtn')?.addEventListener('click', () => {
-        if (typeof RRH.onScanNow === 'function') RRH.onScanNow();
-      });
     }
 
     const shadow = host.shadowRoot;
@@ -545,11 +479,17 @@
       panel: /** @type {HTMLElement} */ (shadow.getElementById('panel')),
       dock: /** @type {HTMLElement} */ (shadow.getElementById('dock')),
       pendingN: /** @type {HTMLElement} */ (shadow.getElementById('pendingN')),
-      cruiseToggle: /** @type {HTMLElement} */ (shadow.getElementById('cruiseToggle')),
-      scanBtn: /** @type {HTMLElement} */ (shadow.getElementById('scanBtn')),
-      chip: /** @type {HTMLElement} */ (shadow.getElementById('chip')),
+      assistant: /** @type {HTMLElement} */ (shadow.getElementById('assistant')),
       toast: /** @type {HTMLElement} */ (shadow.getElementById('toast')),
     };
+  }
+
+  function updateAssistantLabel(u) {
+    const pending = pendingCount > 0 ? `，${pendingCount} 条待办` : '，暂无待办';
+    const status = cruiseStatus ? `，${cruiseStatus}` : '';
+    const label = `Reddit 助手${pending}${status}`;
+    u.assistant?.setAttribute('aria-label', label);
+    u.assistant?.setAttribute('title', label);
   }
 
   function showToast(msg) {
@@ -561,16 +501,20 @@
     t._t = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
-  function metaLine(p) {
-    const bits = [];
-    if (p.score != null) bits.push(`↑${p.score}`);
-    if (p.comments != null) bits.push(`💬${p.comments}`);
-    return bits.join(' · ');
-  }
-
   function clip(s, n) {
     const t = String(s || '').replace(/\s+/g, ' ').trim();
     return t.length > n ? t.slice(0, n - 1) + '…' : t;
+  }
+
+  function discussionUrl(post) {
+    const url = String(post?.url || '');
+    if (/\/comments\/[a-z0-9]+(?:\/|$)/i.test(url)) return url;
+    const id = String(post?.id || '').replace(/^t3_/, '');
+    const subreddit = String(post?.subreddit || '').replace(/^r\//, '');
+    if (/^[a-z0-9]+$/i.test(id) && subreddit) {
+      return `${location.origin}/r/${encodeURIComponent(subreddit)}/comments/${encodeURIComponent(id)}/`;
+    }
+    return url || '#';
   }
 
   function escapeHtml(s) {
@@ -583,19 +527,6 @@
 
   function escapeAttr(s) {
     return escapeHtml(s).replace(/'/g, '&#39;');
-  }
-
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text || '');
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text || '';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-    }
   }
 
   // boot chrome early
