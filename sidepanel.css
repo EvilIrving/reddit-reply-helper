@@ -58,18 +58,6 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
-.header {
-  margin-bottom: 8px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 24px;
-  font-size: 14px;
-}
-
 .tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -179,6 +167,7 @@ a {
 .btn:focus-visible,
 .tab:focus-visible,
 .queue-summary:focus-visible,
+.icon-action:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
@@ -400,7 +389,7 @@ input[type='checkbox'] {
 }
 
 .daily-card {
-  padding: 10px 0;
+  padding: 0;
 }
 
 .daily-card.empty,
@@ -412,14 +401,93 @@ input[type='checkbox'] {
   text-align: center;
 }
 
-.daily-card h3 {
-  margin: 14px 0 6px;
-  font-size: 12px;
+.daily-option {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
 }
 
-.daily-card .title-opt {
-  margin: 0 0 6px;
+.daily-option:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.daily-meta,
+.daily-title-row,
+.daily-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.daily-meta {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.daily-meta strong {
+  color: var(--accent);
+}
+
+.daily-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.daily-title-row h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.daily-section-head {
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.icon-action {
+  appearance: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-action:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.icon-action:active {
+  background: var(--surface);
+}
+
+.icon-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.use-icon[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.icon-action:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .daily-card .body {

@@ -7,13 +7,6 @@
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
-    <header class="header">
-      <div class="brand">
-        <img src="icons/icon-32.png" width="20" height="20" alt="" />
-        <strong>协作助手</strong>
-      </div>
-    </header>
-
     <nav class="tabs" aria-label="侧栏导航">
       <button type="button" class="tab active" data-tab="queue" aria-selected="true">队列</button>
       <button type="button" class="tab" data-tab="daily" aria-selected="false">今日发帖</button>
@@ -34,9 +27,9 @@
     <!-- DAILY -->
     <section id="tab-daily" class="tab-panel hidden">
       <div class="toolbar">
-        <button id="btnDailyAction" class="btn primary main-action" type="button">生成今日备选</button>
+        <button id="btnDailyAction" class="btn primary main-action" type="button">生成 3 个候选</button>
       </div>
-      <p id="dailyStatus" class="status" aria-live="polite">进入本页后才会生成，每天一份。</p>
+      <p id="dailyStatus" class="status" aria-live="polite">进入本页后生成 3 个候选。</p>
       <div id="dailyCard" class="daily-card empty">尚未生成</div>
     </section>
 
@@ -48,6 +41,13 @@
           <label class="field check">
             <input name="followEnabled" type="checkbox" />
             <span>跟随滚动自动分析</span>
+          </label>
+          <label class="field">
+            <span>评分模式</span>
+            <select name="scoringMode">
+              <option value="local">代码评分</option>
+              <option value="ai">AI 原生</option>
+            </select>
           </label>
           <label class="field row">
             <span>推荐最低分</span>
@@ -64,11 +64,6 @@
             <span>人设</span>
             <input name="persona" type="text" />
           </label>
-          <label class="field">
-            <span>偏好 sub</span>
-            <input name="focusSubs" type="text" placeholder="可留空，逗号分隔" />
-          </label>
-          <p id="visitedHint" class="muted"></p>
         </fieldset>
 
         <fieldset class="settings-group">
@@ -84,10 +79,6 @@
           <label class="field">
             <span>Model</span>
             <input name="model" type="text" placeholder="deepseek-chat" />
-          </label>
-          <label class="field row">
-            <span>每日调用上限</span>
-            <input name="dailyAiLimit" type="number" min="1" max="200" />
           </label>
         </fieldset>
 

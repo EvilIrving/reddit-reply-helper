@@ -3,7 +3,7 @@
   "name": "Reddit 协作回复助手",
   "version": "0.3.0",
   "description": "跟随滚动/巡航发现值得回的帖，DeepSeek 生成评论草稿，每日发帖备选。你确认后手动发送。",
-  "permissions": ["storage", "sidePanel", "activeTab", "scripting", "alarms"],
+  "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
   "host_permissions": [
     "https://www.reddit.com/*",
     "https://old.reddit.com/*",

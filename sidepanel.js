@@ -52,7 +52,9 @@ async function switchTab(name) {
   for (const id of ['queue', 'daily', 'settings']) {
     $(`tab-${id}`)?.classList.toggle('hidden', id !== name);
   }
-  if (name === 'daily' && !dailyLoaded) await loadDaily(false);
+  if (name === 'daily') {
+    if (!dailyLoaded) await loadDaily(false);
+  }
 }
 
 async function loadSettingsForm() {
@@ -60,30 +62,15 @@ async function loadSettingsForm() {
   if (!res?.ok) return;
   const s = res.settings;
   const f = els.settingsForm;
-  f.focusSubs.value = (s.focusSubs || []).join(',');
   f.followEnabled.checked = s.followEnabled !== false;
+  f.scoringMode.value = s.scoringMode === 'ai' ? 'ai' : 'local';
   f.minScore.value = s.minScore ?? 58;
   f.apiBase.value = s.apiBase || '';
   f.apiKey.value = s.apiKey || '';
   f.model.value = s.model || 'deepseek-chat';
   f.language.value = s.language || 'zh';
   f.persona.value = s.persona || '';
-  f.dailyAiLimit.value = s.dailyAiLimit ?? 40;
   f.cruiseSpeed.value = s.cruiseSpeed || 'normal';
-  const visited = res.visitedSubs || [];
-  const hint = document.getElementById('visitedHint');
-  if (hint) {
-    if (!visited.length) {
-      hint.textContent = '最近浏览：还没有记录，去任意 sub 逛一下即可';
-    } else {
-      hint.textContent =
-        '最近浏览：' +
-        visited
-          .slice(0, 12)
-          .map((v) => `r/${v.name}`)
-          .join(' · ');
-    }
-  }
 }
 
 /**
@@ -93,18 +80,14 @@ async function onSaveSettings(e) {
   e.preventDefault();
   const f = els.settingsForm;
   const patch = {
-    focusSubs: String(f.focusSubs.value)
-      .split(/[,，\s]+/)
-      .map((x) => x.replace(/^r\//i, '').trim())
-      .filter(Boolean),
     followEnabled: !!f.followEnabled.checked,
+    scoringMode: f.scoringMode.value === 'ai' ? 'ai' : 'local',
     minScore: clampNumber(f.minScore.value, 0, 100, 58),
     apiBase: f.apiBase.value.trim() || 'https://api.deepseek.com/v1',
     apiKey: f.apiKey.value.trim(),
     model: f.model.value.trim() || 'deepseek-chat',
     language: f.language.value === 'en' ? 'en' : 'zh',
     persona: f.persona.value.trim(),
-    dailyAiLimit: clampNumber(f.dailyAiLimit.value, 1, 200, 40),
     cruiseSpeed: f.cruiseSpeed.value || 'normal',
   };
   const res = await chrome.runtime.sendMessage({ type: 'RRH_SAVE_SETTINGS', patch });
@@ -301,8 +284,14 @@ async function forceScan() {
 async function loadDaily(force) {
   dailyLoading = true;
   updateDailyButton();
+  els.dailyStatus.textContent = '正在读取 Reddit 最近访问…';
+  const recentSubs = await syncRecentSubsFromPage();
   els.dailyStatus.textContent = force ? '重新生成中…' : '加载今日备选…';
-  const res = await chrome.runtime.sendMessage({ type: 'RRH_ENSURE_DAILY', force });
+  const res = await chrome.runtime.sendMessage({
+    type: 'RRH_ENSURE_DAILY',
+    force,
+    subs: recentSubs,
+  });
   dailyLoading = false;
   if (!res?.ok) {
     els.dailyStatus.textContent = res?.error || '失败';
@@ -321,10 +310,8 @@ async function loadDaily(force) {
     return;
   }
   dailyPost = post;
-  if (post.status === 'discarded' && !force) {
-    els.dailyStatus.textContent = '今日已弃用，可重新生成';
-  } else if (post.status === 'adopted') {
-    els.dailyStatus.textContent = '已标记为准备发布';
+  if (post.status === 'adopted' && Number.isInteger(post.usedIndex)) {
+    els.dailyStatus.textContent = `第 ${post.usedIndex + 1} 个候选已标记为使用`;
   } else {
     els.dailyStatus.textContent = '';
   }
@@ -338,7 +325,14 @@ function updateDailyButton() {
     els.btnDailyAction.textContent = dailyPost ? '重新生成中…' : '生成中…';
     return;
   }
-  els.btnDailyAction.textContent = dailyPost ? '重新生成' : '生成今日备选';
+  els.btnDailyAction.textContent = dailyPost ? '重新生成' : '生成 3 个候选';
+}
+
+async function syncRecentSubsFromPage() {
+  const result = await sendToActiveResponse({ type: 'RRH_SYNC_RECENT_SUBS' });
+  if (!result?.subs?.length) return [];
+  await chrome.runtime.sendMessage({ type: 'RRH_SET_RECENT_SUBS', subs: result.subs });
+  return result.subs.slice(0, 5);
 }
 
 /**
@@ -346,33 +340,58 @@ function updateDailyButton() {
  */
 function renderDaily(post) {
   els.dailyCard.className = 'daily-card';
-  const titles = post.titles || [];
-  els.dailyCard.innerHTML = `
-    <div class="meta">建议发到 r/${escapeHtml(post.sub || '')} · ${escapeHtml(post.date || '')}</div>
-    <h3>标题备选</h3>
-    <p class="title-opt">1. ${escapeHtml(titles[0] || '')}</p>
-    <p class="title-opt">2. ${escapeHtml(titles[1] || '')}</p>
-    <h3>正文</h3>
-    <div class="body">${escapeHtml(post.body || '')}</div>
-    <p class="reason">${escapeHtml(post.reason || '')}</p>
-    <div class="actions">
-      <button type="button" class="btn small primary" id="d-copy-t1">复制标题1</button>
-      <button type="button" class="btn small" id="d-copy-t2">复制标题2</button>
-      <button type="button" class="btn small" id="d-copy-body">复制正文</button>
-      <button type="button" class="btn small" id="d-adopt">标记已去发</button>
-      <button type="button" class="btn small" id="d-discard">弃用</button>
-    </div>
-  `;
-  $('d-copy-t1')?.addEventListener('click', () => copyText(titles[0] || ''));
-  $('d-copy-t2')?.addEventListener('click', () => copyText(titles[1] || ''));
-  $('d-copy-body')?.addEventListener('click', () => copyText(post.body || ''));
-  $('d-adopt')?.addEventListener('click', async () => {
-    await chrome.runtime.sendMessage({ type: 'RRH_DAILY_STATUS', status: 'adopted' });
-    await loadDaily(false);
+  const candidates = Array.isArray(post.candidates) ? post.candidates.slice(0, 3) : [];
+  els.dailyCard.innerHTML = candidates
+    .map((candidate, index) => {
+      const used = candidate.used || post.usedIndex === index;
+      return `
+        <article class="daily-option${used ? ' is-used' : ''}">
+          <div class="daily-meta">
+            <span>候选 ${index + 1} · r/${escapeHtml(candidate.sub || '')}</span>
+            <span class="daily-state">
+              ${used ? '<strong>已使用</strong>' : ''}
+              <button type="button" class="icon-action use-icon" data-adopt="${index}" aria-label="${used ? `候选 ${index + 1} 已使用` : `标记候选 ${index + 1} 为使用`}" aria-pressed="${String(used)}" title="${used ? '已使用' : '标记使用'}" ${used ? 'disabled' : ''}>${useIcon()}</button>
+            </span>
+          </div>
+          <div class="daily-title-row">
+            <h3>${escapeHtml(candidate.title || '')}</h3>
+            <button type="button" class="icon-action" data-copy-title="${index}" aria-label="复制候选 ${index + 1} 的标题" title="复制标题">${copyIcon()}</button>
+          </div>
+          <div class="daily-section-head">
+            <span>正文</span>
+            <button type="button" class="icon-action" data-copy-body="${index}" aria-label="复制候选 ${index + 1} 的正文" title="复制正文">${copyIcon()}</button>
+          </div>
+          <div class="body">${escapeHtml(candidate.body || '')}</div>
+          ${candidate.reason ? `<p class="reason">${escapeHtml(candidate.reason)}</p>` : ''}
+        </article>
+      `;
+    })
+    .join('');
+
+  els.dailyCard.querySelectorAll('[data-copy-title]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const index = Number(button.getAttribute('data-copy-title'));
+      await copyText(candidates[index]?.title || '');
+      els.dailyStatus.textContent = `已复制候选 ${index + 1} 的标题`;
+    });
   });
-  $('d-discard')?.addEventListener('click', async () => {
-    await chrome.runtime.sendMessage({ type: 'RRH_DAILY_STATUS', status: 'discarded' });
-    await loadDaily(false);
+  els.dailyCard.querySelectorAll('[data-copy-body]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const index = Number(button.getAttribute('data-copy-body'));
+      await copyText(candidates[index]?.body || '');
+      els.dailyStatus.textContent = `已复制候选 ${index + 1} 的正文`;
+    });
+  });
+  els.dailyCard.querySelectorAll('[data-adopt]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const candidateIndex = Number(button.getAttribute('data-adopt'));
+      await chrome.runtime.sendMessage({
+        type: 'RRH_DAILY_STATUS',
+        status: 'adopted',
+        candidateIndex,
+      });
+      await loadDaily(false);
+    });
   });
 }
 
@@ -438,6 +457,14 @@ async function copyText(text) {
     document.execCommand('copy');
     ta.remove();
   }
+}
+
+function copyIcon() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 8.5A2.5 2.5 0 0 1 11.5 6h7A2.5 2.5 0 0 1 21 8.5v10a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 9 18.5v-10Zm2.5-.5a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-10a.5.5 0 0 0-.5-.5h-7ZM3 5.5A2.5 2.5 0 0 1 5.5 3h7A2.5 2.5 0 0 1 15 5.5V6h-2v-.5a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5H7v2H5.5A2.5 2.5 0 0 1 3 15.5v-10Z" fill="currentColor"/></svg>';
+}
+
+function useIcon() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm4.7 4.8a1 1 0 0 1 .1 1.4l-5.5 6a1 1 0 0 1-1.5 0l-2.6-2.8a1 1 0 1 1 1.5-1.4l1.9 2 4.8-5.2a1 1 0 0 1 1.3 0Z" fill="currentColor"/></svg>';
 }
 
 function escapeHtml(s) {

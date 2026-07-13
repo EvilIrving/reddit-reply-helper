@@ -25,6 +25,10 @@
   let scrollTimer = 0;
   /** @type {number} */
   let pendingCount = 0;
+  /** @type {string} */
+  let lastReportedSubPage = '';
+  /** @type {string} */
+  let lastReportedRecentSubs = '';
 
   // Shadow-DOM chrome (overlay / dock / cruise) — isolated from Reddit CSS
   O()?.mountChrome?.();
@@ -41,6 +45,7 @@
   });
   // any page you open counts as browsed (no sub whitelist)
   reportCurrentSub();
+  reportRecentSidebarSubs();
   // sync pending count
   refreshPendingFromSw();
 
@@ -139,6 +144,12 @@
       return true;
     }
 
+    if (msg.type === 'RRH_SYNC_RECENT_SUBS') {
+      const subs = collectRecentSidebarSubs();
+      sendResponse({ ok: true, subs });
+      return true;
+    }
+
     if (msg.type === 'RRH_HIGHLIGHT') {
       sendResponse({ ok: !!S()?.highlightPost?.(msg.postId) });
       return true;
@@ -227,8 +238,10 @@
 
   setTimeout(() => {
     reportCurrentSub();
+    reportRecentSidebarSubs();
     if (followEnabled) runAnalyze(false);
   }, 1500);
+  setTimeout(reportRecentSidebarSubs, 5000);
   setTimeout(() => {
     if (followEnabled) runAnalyze(false);
   }, 3500);
@@ -241,6 +254,7 @@
       seenIds.clear();
       detailAssistedIds.clear();
       reportCurrentSub();
+      setTimeout(reportRecentSidebarSubs, 800);
       if (followEnabled) {
         setTimeout(() => runAnalyze(false), 800);
       }
@@ -476,9 +490,59 @@
 
   function reportCurrentSub() {
     const m = location.pathname.match(/\/r\/([^/]+)/i);
-    if (!m) return;
+    if (!m) {
+      lastReportedSubPage = '';
+      return;
+    }
     const sub = m[1];
-    if (/^(all|popular)$/i.test(sub)) return;
+    if (/^(all|popular)$/i.test(sub)) {
+      lastReportedSubPage = '';
+      return;
+    }
+    const pageKey = `${location.pathname}|${sub.toLowerCase()}`;
+    if (pageKey === lastReportedSubPage) return;
+    lastReportedSubPage = pageKey;
     chrome.runtime.sendMessage({ type: 'RRH_RECORD_VISITED', subs: [sub] }).catch(() => {});
+  }
+
+  function reportRecentSidebarSubs() {
+    const subs = collectRecentSidebarSubs();
+    if (!subs.length) return;
+    const key = subs.map((name) => name.toLowerCase()).join('|');
+    if (key === lastReportedRecentSubs) return;
+    lastReportedRecentSubs = key;
+    chrome.runtime.sendMessage({ type: 'RRH_SET_RECENT_SUBS', subs }).catch(() => {});
+  }
+
+  function collectRecentSidebarSubs() {
+    const labels = [...document.querySelectorAll('[role="heading"], h1, h2, h3, h4, span, p, div')]
+      .filter((el) => /^(最近访问|Recent|Recently visited)$/i.test((el.textContent || '').trim()));
+
+    for (const label of labels) {
+      let container = label.parentElement;
+      for (let depth = 0; container && depth < 6; depth += 1) {
+        const names = [];
+        const seen = new Set();
+        for (const anchor of container.querySelectorAll('a[href]')) {
+          if (!(label.compareDocumentPosition(anchor) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+          let path = '';
+          try {
+            path = new URL(anchor.href, location.href).pathname;
+          } catch {
+            continue;
+          }
+          const match = path.match(/^\/r\/([^/]+)\/?$/i);
+          if (!match || /^(all|popular)$/i.test(match[1])) continue;
+          const key = match[1].toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          names.push(match[1]);
+          if (names.length === 5) return names;
+        }
+        if (names.length) return names;
+        container = container.parentElement;
+      }
+    }
+    return [];
   }
 })();

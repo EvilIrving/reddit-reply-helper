@@ -6,6 +6,7 @@ import {
   countPendingQueue,
   recordVisitedSubs,
   getVisitedSubs,
+  setRecentSubs,
   updateQueueItem,
   removeProcessedQueueItems,
 } from './lib/settings.js';
@@ -18,21 +19,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   } catch {
     /* ignore */
   }
-  try {
-    await chrome.alarms.create('rrh_daily', { periodInMinutes: 60 });
-  } catch {
-    /* ignore */
-  }
   refreshBadge();
-});
-
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== 'rrh_daily') return;
-  try {
-    await ensureDailyPost({ force: false });
-  } catch {
-    /* ignore */
-  }
 });
 
 chrome.action.onClicked.addListener(async (tab) => {
@@ -63,7 +50,6 @@ async function handleMessage(msg, sender) {
       return {
         ok: true,
         settings: await getSettings(),
-        visitedSubs: await getVisitedSubs(),
       };
 
     case 'RRH_RECORD_VISITED': {
@@ -73,6 +59,11 @@ async function handleMessage(msg, sender) {
 
     case 'RRH_GET_VISITED':
       return { ok: true, visited: await getVisitedSubs() };
+
+    case 'RRH_SET_RECENT_SUBS': {
+      const recent = await setRecentSubs(msg.subs || []);
+      return { ok: true, recent };
+    }
 
     case 'RRH_SAVE_SETTINGS': {
       const settings = await saveSettings(msg.patch || {});
@@ -152,10 +143,10 @@ async function handleMessage(msg, sender) {
       return getNextPending(msg.excludeId);
 
     case 'RRH_ENSURE_DAILY':
-      return ensureDailyPost({ force: !!msg.force });
+      return ensureDailyPost({ force: !!msg.force, subs: msg.subs });
 
     case 'RRH_DAILY_STATUS':
-      return setDailyStatus(msg.status);
+      return setDailyStatus(msg.status, msg.candidateIndex);
 
     case 'RRH_OPEN_SIDE_PANEL': {
       if (sender.tab?.id) {
