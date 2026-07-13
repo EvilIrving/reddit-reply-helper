@@ -16,5 +16,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/validate.mjs
-
+      - run: npm run release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-packages
+          path: releases/*.zip
+          if-no-files-found: error

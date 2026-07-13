@@ -36,7 +36,7 @@
 
 需要 Chrome 116+ 或 Microsoft Edge 116+。浏览器商店暂未提供安装入口，请先下载对应安装包：
 
-[Chrome 安装包](https://github.com/EvilIrving/reddit-reply-helper/releases/download/v0.4.0/reddit-reply-helper-chrome-v0.4.0.zip) · [Edge 安装包](https://github.com/EvilIrving/reddit-reply-helper/releases/download/v0.4.0/reddit-reply-helper-edge-v0.4.0.zip) · [查看发布页](https://github.com/EvilIrving/reddit-reply-helper/releases/tag/v0.4.0)
+[查看全部安装包](https://github.com/EvilIrving/reddit-reply-helper/releases)
 
 1. 下载并解压对应浏览器的安装包。
 2. 在 Chrome 或 Edge 扩展管理页打开开发者模式。
