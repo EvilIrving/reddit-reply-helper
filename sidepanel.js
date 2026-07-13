@@ -4,6 +4,7 @@ const els = {
   tabs: document.querySelectorAll('.tab'),
   queueStatus: $('queueStatus'),
   queueList: $('queueList'),
+  queueTools: document.querySelector('.queue-tools'),
   dailyStatus: $('dailyStatus'),
   dailyCard: $('dailyCard'),
   settingsForm: $('settingsForm'),
@@ -11,6 +12,7 @@ const els = {
   btnForceScan: $('btnForceScan'),
   btnCruise: $('btnCruise'),
   btnClearProcessed: $('btnClearProcessed'),
+  btnClearAll: $('btnClearAll'),
   btnDailyAction: $('btnDailyAction'),
 };
 
@@ -35,6 +37,7 @@ async function init() {
   els.btnForceScan.addEventListener('click', forceScan);
   els.btnCruise.addEventListener('click', toggleCruise);
   els.btnClearProcessed.addEventListener('click', clearProcessed);
+  els.btnClearAll.addEventListener('click', clearAllQueue);
   els.btnDailyAction.addEventListener('click', () => loadDaily(!!dailyPost));
   els.settingsForm.addEventListener('submit', onSaveSettings);
 
@@ -109,6 +112,7 @@ async function loadQueue() {
   const queue = res?.queue || [];
   els.queueList.innerHTML = '';
   if (!queue.length) {
+    els.queueTools.hidden = true;
     els.queueList.innerHTML =
       '<div class="empty">暂无候选。打开 Reddit 后点「立即分析」。</div>';
     els.queueStatus.textContent = '队列为空';
@@ -116,19 +120,22 @@ async function loadQueue() {
   }
   const open = queue.filter((x) => x.status === 'new' || x.status === 'later');
   const rest = queue.filter((x) => x.status !== 'new' && x.status !== 'later');
+  els.queueTools.hidden = false;
   els.queueStatus.textContent = `待处理 ${open.length} · 已处理 ${rest.length}`;
 
   if (open.length) {
     const h = document.createElement('div');
     h.className = 'section-label';
-    h.innerHTML = `<span>待处理</span><span>${open.length}</span>`;
+    h.innerHTML = `<span>待处理</span><span class="section-label-end"><span>${open.length}</span></span>`;
+    h.querySelector('.section-label-end')?.prepend(els.queueTools);
     els.queueList.appendChild(h);
     for (const item of open) els.queueList.appendChild(renderQueueCard(item));
   }
   if (rest.length) {
     const h = document.createElement('div');
-    h.className = 'section-label processed';
-    h.innerHTML = `<span>已处理</span><span>${rest.length}</span>`;
+    h.className = `section-label${open.length ? ' processed' : ''}`;
+    h.innerHTML = `<span>已处理</span><span class="section-label-end"><span>${rest.length}</span></span>`;
+    if (!open.length) h.querySelector('.section-label-end')?.prepend(els.queueTools);
     els.queueList.appendChild(h);
     for (const item of rest.slice(0, 15)) els.queueList.appendChild(renderQueueCard(item));
   }
@@ -163,6 +170,8 @@ function renderQueueCard(item) {
       <textarea data-d="draft" rows="3" aria-label="回复草稿">${escapeHtml(draft)}</textarea>
       <div class="actions">
         <button type="button" class="btn small primary" data-act="fill">写回复</button>
+        <button type="button" class="btn small" data-act="stash"${item.status === 'later' ? ' disabled' : ''}>${item.status === 'later' ? '已收着' : '先收着'}</button>
+        <button type="button" class="btn small" data-act="locate">定位</button>
         <a class="btn small" href="${escapeAttr(discussionUrl(post) || '#')}" target="_blank" rel="noopener">打开</a>
         <button type="button" class="btn small danger" data-act="skip">跳过</button>
       </div>
@@ -199,6 +208,24 @@ function renderQueueCard(item) {
           url: discussionUrl(post),
         });
         setQueueStatus(res?.ok ? '正在进入回复位置…' : '请先打开 Reddit 页面', !res?.ok);
+        return;
+      }
+      if (act === 'stash') {
+        await chrome.runtime.sendMessage({
+          type: 'RRH_RESOLVE',
+          id: item.id,
+          status: 'later',
+        });
+        setQueueStatus('已收着');
+        await loadQueue();
+        return;
+      }
+      if (act === 'locate') {
+        const res = await sendToActiveResponse({
+          type: 'RRH_HIGHLIGHT',
+          postId: post.id,
+        });
+        setQueueStatus(res?.ok ? '已定位到帖子' : '当前 Reddit 页面未找到该帖子', !res?.ok);
         return;
       }
       if (act === 'skip') {
@@ -408,6 +435,16 @@ async function clearProcessed() {
   const res = await chrome.runtime.sendMessage({ type: 'RRH_CLEAR_PROCESSED' });
   setQueueStatus(res?.ok ? '已清理已处理记录' : `清理失败：${res?.error || ''}`, !res?.ok);
   if (res?.ok) await loadQueue();
+}
+
+async function clearAllQueue() {
+  if (!window.confirm('确定清空队列中的全部记录吗？')) return;
+  const res = await chrome.runtime.sendMessage({ type: 'RRH_CLEAR_QUEUE' });
+  setQueueStatus(res?.ok ? '队列已全部清空' : `清空失败：${res?.error || ''}`, !res?.ok);
+  if (res?.ok) {
+    expandedQueueId = null;
+    await loadQueue();
+  }
 }
 
 /**

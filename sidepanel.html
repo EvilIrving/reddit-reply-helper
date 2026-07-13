@@ -16,11 +16,18 @@
     <!-- QUEUE -->
     <section id="tab-queue" class="tab-panel">
       <div class="toolbar">
-        <button id="btnForceScan" class="btn primary main-action" type="button">立即分析</button>
+        <button id="btnForceScan" class="btn" type="button">立即分析</button>
         <button id="btnCruise" class="btn" type="button" aria-pressed="false">开始巡航</button>
-        <button id="btnClearProcessed" class="btn" type="button">清理已处理</button>
       </div>
       <p id="queueStatus" class="status" aria-live="polite">滚动 Reddit 列表页即可发现候选。</p>
+      <div class="queue-tools" aria-label="队列清理">
+        <button id="btnClearProcessed" class="icon-action" type="button" title="清理已处理" aria-label="清理已处理">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5M4 20h6l8-8-6-6-8 8v6Zm2-2v-3.2l6-6 3.2 3.2-6 6H6Z"/></svg>
+        </button>
+        <button id="btnClearAll" class="icon-action" type="button" title="全部清空" aria-label="全部清空">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
+        </button>
+      </div>
       <div id="queueList" class="list"></div>
     </section>
 

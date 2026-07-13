@@ -9,6 +9,7 @@ import {
   setRecentSubs,
   updateQueueItem,
   removeProcessedQueueItems,
+  clearQueue,
 } from './lib/settings.js';
 import { ensureDailyPost, setDailyStatus } from './lib/daily.js';
 import { translateToEnglish } from './lib/deepseek.js';
@@ -128,6 +129,13 @@ async function handleMessage(msg, sender) {
       const queue = await removeProcessedQueueItems();
       await refreshBadge();
       return { ok: true, queue, pending: await countPendingQueue() };
+    }
+
+    case 'RRH_CLEAR_QUEUE': {
+      const queue = await clearQueue();
+      await refreshBadge();
+      broadcastToReddit({ type: 'RRH_PENDING_UPDATE', pending: 0 });
+      return { ok: true, queue, pending: 0 };
     }
 
     case 'RRH_TRANSLATE_TO_ENGLISH': {

@@ -103,6 +103,11 @@ a {
   margin-bottom: 8px;
 }
 
+.toolbar > .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .btn {
   appearance: none;
   display: inline-flex;
@@ -188,6 +193,34 @@ select:focus-visible {
 
 .status.err {
   color: var(--danger);
+}
+
+.queue-tools {
+  display: flex;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.queue-tools[hidden] {
+  display: none;
+}
+
+.section-label-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.queue-tools .icon-action:last-child:hover {
+  color: var(--danger);
+}
+
+.queue-tools svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .list {
