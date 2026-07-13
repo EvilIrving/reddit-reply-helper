@@ -1,34 +1,49 @@
 # Reddit 协作回复助手
 
-一款面向 Chrome 与 Edge 的 MV3 浏览器扩展，在浏览 Reddit 时发现值得参与的帖子，提供中文摘要、回复提醒和一条可编辑草稿。所有帖子与评论都由用户自行决定并手动发送。
+[![校验](https://github.com/EvilIrving/reddit-reply-helper/actions/workflows/validate.yml/badge.svg)](https://github.com/EvilIrving/reddit-reply-helper/actions/workflows/validate.yml)
+[![许可证：MIT](https://img.shields.io/badge/license-MIT-2f3138.svg)](LICENSE)
+
+面向中文用户的 Chrome 与 Edge Reddit 回复助手。它会跟随浏览发现值得参与的讨论，提供中文理解、避重新角度和一条可编辑草稿，最终修改与发送始终由用户完成。
 
 > 本项目是非官方工具，与 Reddit 或 DeepSeek 无隶属、赞助或背书关系。
 
 [产品官网](https://evilirving.github.io/reddit-reply-helper/) · [安装说明](https://evilirving.github.io/reddit-reply-helper/install.html) · [隐私说明](https://evilirving.github.io/reddit-reply-helper/privacy.html) · [支持](https://evilirving.github.io/reddit-reply-helper/support.html)
 
-## 功能
+![Reddit 页面右侧显示中文摘要、新角度和回复草稿的推荐浮层](docs/assets/store/screenshot-overlay.png)
+
+## 适合谁
+
+适合希望用中文高效参与 Reddit 真实讨论，同时保留最终判断与发送控制权的用户。扩展把找帖、理解上下文、准备回复与暂存待办放进同一条浏览路径，不提供自动评论、自动发帖、自动投票或多账号互刷功能。
+
+## 发现与判断
 
 - 跟随页面滚动增量分析帖子，也可手动开启慢速巡航。
 - 可在代码评分与 AI 原生评分之间切换；AI 模式批量理解帖子后给出推荐分，失败时自动回退代码评分。
 - 在隔离的页内浮层展示中文标题、摘要、提醒和单条草稿。
 - 进入帖子详情页后读取最多 24 条已加载的可见评论，生成避开已有观点的新角度与草稿。
+
+## 起草与发送
+
 - 在评论和发帖编辑器中一键把中文标题、正文翻译成自然英文并回填，不会自动发送。
 - 支持跳过、暂存、定位、打开与复制，浮层打开时仍可继续分析。
 - 使用用户自己的 DeepSeek API Key 生成内容，失败时静默回退到本地模板。
+
+## 待办与每日备选
+
 - 每次生成前动态读取 Reddit 左侧“最近访问”的 5 个 sub，每天生成 3 个完整发帖候选；可重新生成或标记使用，不会自动发布。
 - 支持新版 Reddit、`old.reddit.com` 和浏览过的任意 subreddit。
 
 ## 安装
 
-商店审核通过后会补充 Chrome Web Store 与 Microsoft Edge Add-ons 链接，当前可从 [GitHub Releases](https://github.com/EvilIrving/reddit-reply-helper/releases) 获取手动安装包。
+当前尚未创建公开 GitHub Release，也未在 Chrome Web Store 或 Microsoft Edge Add-ons 上架。体验当前源码需要 Chrome 116+ 或 Microsoft Edge 116+：
 
-1. 下载对应浏览器的 ZIP 并解压，或克隆本仓库。
+1. 克隆本仓库，或在 GitHub 的 `Code` 菜单中选择 `Download ZIP` 并解压源码。
 2. 在 Chrome 或 Edge 扩展管理页打开开发者模式。
-3. 选择“加载已解压的扩展程序”，指向解压目录或仓库根目录。
+3. 选择“加载已解压的扩展程序”，指向包含 `manifest.json` 的仓库根目录。
 4. 点击扩展图标打开侧栏，按需填写 DeepSeek API Key。
 5. 打开 Reddit 列表页并硬刷新一次，使 content script 生效。
 
-扩展更新后需要在扩展管理页重新加载，并硬刷新已打开的 Reddit 页面。
+源码更新后需要拉取最新提交或重新下载源码，再到扩展管理页重新加载，并硬刷新已打开的 Reddit 页面。更完整的浏览器地址与卸载说明见[安装说明](https://evilirving.github.io/reddit-reply-helper/install.html)。
 
 ## 使用方式
 
@@ -64,7 +79,7 @@
 node scripts/validate.mjs
 ```
 
-生成并检查 Chrome、Edge 与 GitHub 发布包：
+在本地生成并检查 Chrome、Edge 与 GitHub 发布候选包：
 
 ```bash
 npm run release
@@ -83,6 +98,7 @@ scripts/validate.mjs   清单引用与敏感密钥校验
 scripts/package.mjs    Chrome、Edge 与 GitHub 发布包
 docs/                  GitHub Pages 官网、隐私与支持页面
 release-docs/          商店文案、审核说明与发布材料
+GROWTH.md              官网与公开文案的事实来源
 ```
 
 ## 参与贡献

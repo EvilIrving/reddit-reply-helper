@@ -199,6 +199,11 @@ h1 {
   font-weight: 520;
 }
 
+.hero-copy,
+.product-shot {
+  min-width: 0;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -436,6 +441,44 @@ h1 {
   color: var(--muted);
 }
 
+.source-button {
+  margin-top: 24px;
+  border-color: var(--line);
+}
+
+.source-button:hover {
+  background: var(--surface);
+}
+
+.install-steps {
+  border-top: 1px solid var(--line);
+}
+
+.install-steps > div {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 18px;
+  padding-block: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.install-steps span {
+  color: var(--accent);
+  font-weight: 750;
+}
+
+.install-steps p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.install-steps > a {
+  display: inline-block;
+  margin-top: 22px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .data-flow {
   display: flex;
   align-items: stretch;
@@ -622,7 +665,7 @@ h1 {
   .section-heading,
   .boundary-grid,
   .final-cta .shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-grid {
@@ -699,6 +742,13 @@ h1 {
 
   h1 {
     font-size: clamp(2.75rem, 14vw, 4.2rem);
+    overflow-wrap: anywhere;
+    text-wrap: wrap;
+  }
+
+  .hero-copy > p,
+  .hero-note {
+    overflow-wrap: anywhere;
   }
 
   .trust-strip .shell,
