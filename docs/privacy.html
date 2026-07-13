@@ -13,7 +13,7 @@
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
     <header class="site-header"><div class="shell"><a class="brand" href="index.html"><img src="assets/icon-48.png" alt="" /><span>Reddit 协作回复助手</span></a><nav class="nav" aria-label="主导航"><a href="index.html">首页</a><a href="install.html">安装</a><a class="nav-cta" href="support.html">支持</a></nav></div></header>
-    <section class="document-hero"><div class="shell"><h1>隐私说明</h1><p>更新日期：2026 年 7 月 13 日。适用于 Chrome、Microsoft Edge 与 GitHub 源码安装版本。</p></div></section>
+    <section class="document-hero"><div class="shell"><h1>隐私说明</h1><p>更新日期：2026 年 7 月 14 日。适用于 Chrome、Microsoft Edge 与手动安装版本。</p></div></section>
     <main class="document" id="main">
       <div class="callout"><p><strong>简要说明：</strong>扩展在 Reddit 页面读取完成核心功能所需的内容，并把设置、API Key 和队列保存在浏览器本地。只有在用户明确勾选同意后，必要文本才会发送到用户填写的 AI 服务。</p></div>
       <h2>产品身份</h2>
@@ -27,7 +27,7 @@
       <p>项目维护者不运营同步服务或中转服务器，也不能从浏览器本地存储中读取这些数据。用户可以在设置中撤回 AI 数据发送同意、清空 Key，或通过浏览器移除扩展并清除本地扩展数据。</p>
       <h2>外部传输</h2>
       <p>只有当用户填写 API Key 并明确勾选 AI 数据发送同意后，扩展才会向用户填写的 OpenAI 兼容 API 发起请求，默认服务为 DeepSeek。请求可能包含候选帖子的 subreddit、标题、部分正文、发布时间、互动数字、标签、详情页当前已加载的可见评论，以及用户主动要求翻译的编辑器文本。</p>
-      <p>启用 AI 原生评分时，一次请求可能包含最多 20 篇候选帖子；详情页避重上下文最多包含 24 条当前可见评论。API Key 通过 HTTPS 请求的 <code>Authorization</code> 标头直接发送到所填服务，请求不附带 Reddit Cookie。</p>
+      <p>启用 AI 评分时，一次请求可能包含最多 20 篇候选帖子；详情页避重上下文最多包含 24 条当前可见评论。API Key 通过 HTTPS 请求的 <code>Authorization</code> 标头直接发送到所填服务，请求不附带 Reddit Cookie。</p>
       <p>第三方 AI 服务会按其自身条款处理请求内容、凭据与网络元数据。撤回扩展内同意会停止后续 AI 请求，但不会删除第三方此前已经接收的数据；相关删除请求需按第三方服务政策处理。</p>
       <p>扩展也可能向 Reddit 的 JSON 或 RSS 地址发起只读请求，作为页面扫描的辅助路径。扩展不包含分析统计、广告、远程日志、数据经纪、远程执行代码或其他第三方 SDK。</p>
       <h2>权限用途</h2>
@@ -37,7 +37,7 @@
           <tr><td><code>storage</code></td><td>在浏览器本地保存设置、API Key、同意状态、队列与使用记录。</td></tr>
           <tr><td><code>sidePanel</code></td><td>显示待办、每日发帖备选与设置。</td></tr>
           <tr><td><code>activeTab</code></td><td>在用户当前打开的 Reddit 标签页执行明确操作。</td></tr>
-          <tr><td><code>scripting</code></td><td>在内容脚本尚未加载时，由用户点击“立即分析”后补充注入扩展脚本和样式。</td></tr>
+          <tr><td><code>scripting</code></td><td>当前页面的扩展功能尚未启用时，由用户点击“立即分析”后加载扩展自带的页面功能与样式。</td></tr>
           <tr><td>Reddit 主机权限</td><td>读取当前页面帖子与已加载评论，并访问 Reddit JSON/RSS 辅助数据。</td></tr>
           <tr><td>DeepSeek 主机权限</td><td>在用户填写 Key 且明确同意后发送 AI 请求。</td></tr>
         </tbody>

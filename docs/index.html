@@ -32,6 +32,7 @@
             "operatingSystem": "Chrome 116+、Microsoft Edge 116+",
             "softwareVersion": "0.4.0",
             "url": "https://evilirving.github.io/reddit-reply-helper/",
+            "downloadUrl": "https://github.com/EvilIrving/reddit-reply-helper/releases/tag/v0.4.0",
             "codeRepository": "https://github.com/EvilIrving/reddit-reply-helper",
             "description": "面向中文用户的 Reddit 人机协作回复浏览器扩展，提供中文理解、避重新角度和可编辑草稿，由用户手动发送。",
             "license": "https://opensource.org/license/mit",
@@ -57,7 +58,7 @@
               {
                 "@type": "Question",
                 "name": "当前如何安装？",
-                "acceptedAnswer": { "@type": "Answer", "text": "当前尚未创建公开 GitHub Release，也未在浏览器商店上架。可以克隆或下载 GitHub 仓库源码，再通过 Chrome 或 Edge 的开发者模式加载包含 manifest.json 的目录。" }
+                "acceptedAnswer": { "@type": "Answer", "text": "从 GitHub 发布页下载 Chrome 或 Edge 安装包，解压后在浏览器扩展管理页开启开发者模式，再选择加载已解压的扩展程序。" }
               },
               {
                 "@type": "Question",
@@ -101,12 +102,12 @@
       <section class="hero">
         <div class="shell hero-grid">
           <div class="hero-copy">
-            <div class="status-line"><span class="status-dot"></span>0.4.0 源码体验阶段</div>
+            <div class="status-line"><span class="status-dot"></span>适用于 Chrome 与 Edge</div>
             <h1>少找帖，多参与真实讨论。</h1>
             <p>边刷 Reddit 边筛选值得回复的帖子，快速看懂英文上下文，拿到一个不重复的回复角度。草稿可以改，发送必须由你完成。</p>
             <div class="actions">
-              <a class="button primary" href="install.html">查看安装方式</a>
-              <a class="button secondary" href="https://github.com/EvilIrving/reddit-reply-helper" rel="noopener">查看源代码</a>
+              <a class="button primary" href="https://github.com/EvilIrving/reddit-reply-helper/releases/tag/v0.4.0" rel="noopener">下载扩展</a>
+              <a class="button secondary" href="install.html">查看安装方式</a>
             </div>
             <p class="hero-note">免费开源 · Chrome/Edge 116+ · 自备 DeepSeek API Key 可启用 AI 功能 · 不自动发布</p>
           </div>
@@ -120,14 +121,17 @@
       <section class="section alt" id="install">
         <div class="shell boundary-grid">
           <div>
-            <h2>当前从源码安装。</h2>
-            <p>尚未创建公开 GitHub Release，也未在 Chrome Web Store 或 Microsoft Edge Add-ons 上架。</p>
-            <a class="button source-button" href="https://github.com/EvilIrving/reddit-reply-helper" rel="noopener">打开 GitHub 仓库</a>
+            <h2>下载后手动安装。</h2>
+            <p>浏览器商店暂未提供安装入口，请先从 GitHub 下载适用于 Chrome 或 Edge 的安装包。</p>
+            <div class="actions install-actions">
+              <a class="button source-button" href="https://github.com/EvilIrving/reddit-reply-helper/releases/download/v0.4.0/reddit-reply-helper-chrome-v0.4.0.zip">下载 Chrome 版</a>
+              <a class="button source-button" href="https://github.com/EvilIrving/reddit-reply-helper/releases/download/v0.4.0/reddit-reply-helper-edge-v0.4.0.zip">下载 Edge 版</a>
+            </div>
           </div>
           <div class="install-steps">
-            <div><span>01</span><p>克隆仓库，或从 GitHub 的 Code 菜单下载源码 ZIP 并解压。</p></div>
+            <div><span>01</span><p>下载适用于当前浏览器的安装包并解压。</p></div>
             <div><span>02</span><p>打开 Chrome 或 Edge 扩展管理页，开启开发者模式。</p></div>
-            <div><span>03</span><p>选择“加载已解压的扩展程序”，指向包含 manifest.json 的目录。</p></div>
+            <div><span>03</span><p>选择“加载已解压的扩展程序”，指向解压后的目录。</p></div>
             <a href="install.html">查看完整安装与更新说明</a>
           </div>
         </div>
@@ -216,7 +220,7 @@
           <h2>常见问题</h2>
           <details><summary>它会自动发评论或帖子吗？</summary><p>不会。扩展最多把草稿安全填入空编辑器，最终检查与发送只能由用户完成。</p></details>
           <details><summary>必须配置 DeepSeek 吗？</summary><p>不必须。本地评分、队列与模板不需要 API Key；翻译、AI 摘要、避重新角度和 AI 草稿需要用户自己的 Key，并需要单独同意数据发送。</p></details>
-          <details><summary>当前如何安装？</summary><p>当前尚未创建公开 GitHub Release，也未在浏览器商店上架。可以克隆或下载 GitHub 仓库源码，再通过 Chrome 或 Edge 的开发者模式加载包含 manifest.json 的目录。</p></details>
+          <details><summary>当前如何安装？</summary><p>从 GitHub 发布页下载 Chrome 或 Edge 安装包，解压后在浏览器扩展管理页开启开发者模式，再选择“加载已解压的扩展程序”。</p></details>
           <details><summary>会检查整篇帖子所有评论吗？</summary><p>不会。扩展只读取当前页面已经加载且可见的评论，最多 24 条，并在界面显示本次实际参考数量。</p></details>
           <details><summary>它免费吗？</summary><p>扩展以 MIT License 免费开源。AI 功能使用用户自己的 DeepSeek API Key，第三方 API 费用由用户与服务商结算。</p></details>
           <details><summary>这是 Reddit 官方产品吗？</summary><p>不是。本项目是独立的非官方工具，与 Reddit 或 DeepSeek 无隶属、赞助或背书关系。</p></details>

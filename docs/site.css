@@ -446,6 +446,14 @@ h1 {
   border-color: var(--line);
 }
 
+.install-actions {
+  margin-top: 24px;
+}
+
+.install-actions .source-button {
+  margin-top: 0;
+}
+
 .source-button:hover {
   background: var(--surface);
 }

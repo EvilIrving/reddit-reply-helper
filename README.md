@@ -1,6 +1,5 @@
 # Reddit 协作回复助手
 
-[![校验](https://github.com/EvilIrving/reddit-reply-helper/actions/workflows/validate.yml/badge.svg)](https://github.com/EvilIrving/reddit-reply-helper/actions/workflows/validate.yml)
 [![许可证：MIT](https://img.shields.io/badge/license-MIT-2f3138.svg)](LICENSE)
 
 面向中文用户的 Chrome 与 Edge Reddit 回复助手。它会跟随浏览发现值得参与的讨论，提供中文理解、避重新角度和一条可编辑草稿，最终修改与发送始终由用户完成。
@@ -18,7 +17,7 @@
 ## 发现与判断
 
 - 跟随页面滚动增量分析帖子，也可手动开启慢速巡航。
-- 可在代码评分与 AI 原生评分之间切换；AI 模式批量理解帖子后给出推荐分，失败时自动回退代码评分。
+- 可在本地评分与 AI 评分之间切换；AI 请求失败时自动回退到本地评分。
 - 在隔离的页内浮层展示中文标题、摘要、提醒和单条草稿。
 - 进入帖子详情页后读取最多 24 条已加载的可见评论，生成避开已有观点的新角度与草稿。
 
@@ -35,15 +34,17 @@
 
 ## 安装
 
-当前尚未创建公开 GitHub Release，也未在 Chrome Web Store 或 Microsoft Edge Add-ons 上架。体验当前源码需要 Chrome 116+ 或 Microsoft Edge 116+：
+需要 Chrome 116+ 或 Microsoft Edge 116+。浏览器商店暂未提供安装入口，请先下载对应安装包：
 
-1. 克隆本仓库，或在 GitHub 的 `Code` 菜单中选择 `Download ZIP` 并解压源码。
+[Chrome 安装包](https://github.com/EvilIrving/reddit-reply-helper/releases/download/v0.4.0/reddit-reply-helper-chrome-v0.4.0.zip) · [Edge 安装包](https://github.com/EvilIrving/reddit-reply-helper/releases/download/v0.4.0/reddit-reply-helper-edge-v0.4.0.zip) · [查看发布页](https://github.com/EvilIrving/reddit-reply-helper/releases/tag/v0.4.0)
+
+1. 下载并解压对应浏览器的安装包。
 2. 在 Chrome 或 Edge 扩展管理页打开开发者模式。
-3. 选择“加载已解压的扩展程序”，指向包含 `manifest.json` 的仓库根目录。
+3. 选择“加载已解压的扩展程序”，指向解压后的目录。
 4. 点击扩展图标打开侧栏，按需填写 DeepSeek API Key。
-5. 打开 Reddit 列表页并硬刷新一次，使 content script 生效。
+5. 打开 Reddit 列表页并硬刷新一次，使扩展在当前页面生效。
 
-源码更新后需要拉取最新提交或重新下载源码，再到扩展管理页重新加载，并硬刷新已打开的 Reddit 页面。更完整的浏览器地址与卸载说明见[安装说明](https://evilirving.github.io/reddit-reply-helper/install.html)。
+更新时下载新版安装包并替换原目录，再到扩展管理页重新加载，并硬刷新已打开的 Reddit 页面。更完整的浏览器地址与卸载说明见[安装说明](https://evilirving.github.io/reddit-reply-helper/install.html)。
 
 ## 使用方式
 
@@ -57,7 +58,7 @@
 
 ## DeepSeek 与数据处理
 
-默认 API Base 为 `https://api.deepseek.com/v1`，默认模型为 `deepseek-chat`。API Key、AI 数据发送同意状态、设置、队列和浏览记录保存在浏览器本地；只有在用户明确勾选同意后，AI 原生评分才会把一批待评估帖子的 subreddit、标题、部分正文、发布时间、互动数字和详情页已加载的可见评论发送到 DeepSeek，候选生成阶段还会发送详情页最多 24 条已加载的可见评论，用于评分、翻译、摘要、提醒、新角度与避重草稿；用户主动点击中译英时，编辑器文本也会发送到 DeepSeek。
+默认 API Base 为 `https://api.deepseek.com/v1`，默认模型为 `deepseek-chat`。API Key、AI 数据发送同意状态、设置、队列和浏览记录保存在浏览器本地；只有在用户明确勾选同意后，AI 评分才会把最多 20 篇候选帖子的 subreddit、标题、部分正文、发布时间、互动数字和详情页已加载的可见评论发送到 DeepSeek。生成中文摘要、新角度和草稿时，最多还会发送详情页当前已加载的 24 条可见评论；用户主动点击中译英时，编辑器文本也会发送到 DeepSeek。
 
 项目维护者不运营中转服务器，也不接收这些数据。完整说明见 [隐私说明](PRIVACY.md)。
 
@@ -70,36 +71,6 @@
 | `activeTab`、`scripting` | 与当前 Reddit 页面交互 |
 | Reddit 主机权限 | 读取当前页面帖子，并可读取 JSON/RSS 辅助数据 |
 | DeepSeek 主机权限 | 使用用户配置的 API Key 发起 AI 请求 |
-
-## 开发与校验
-
-项目使用原生 JavaScript、HTML 与 CSS，运行扩展不需要安装依赖。提交前运行：
-
-```bash
-node scripts/validate.mjs
-```
-
-在本地生成并检查 Chrome、Edge 与 GitHub 发布候选包：
-
-```bash
-npm run release
-```
-
-涉及页面脚本或界面的改动仍需在真实 Reddit 页面手动验证，包括新版页面与 `old.reddit.com`。
-
-## 项目结构
-
-```text
-background.js          服务工作线程、分析管线与消息桥
-content/               帖子与可见评论解析、浮层、编辑器中译英、滚动与巡航
-lib/                   打分、AI、翻译、观点避重、草稿、队列与每日备选
-sidepanel.*            队列、今日发帖与设置界面
-scripts/validate.mjs   清单引用与敏感密钥校验
-scripts/package.mjs    Chrome、Edge 与 GitHub 发布包
-docs/                  GitHub Pages 官网、隐私与支持页面
-release-docs/          商店文案、审核说明与发布材料
-GROWTH.md              官网与公开文案的事实来源
-```
 
 ## 参与贡献
 
