@@ -29,6 +29,8 @@
   let lastReportedSubPage = '';
   /** @type {string} */
   let lastReportedRecentSubs = '';
+  /** @type {boolean|null} */
+  let aiEnabled = null;
 
   // Shadow-DOM chrome (overlay / dock / cruise) — isolated from Reddit CSS
   O()?.mountChrome?.();
@@ -83,6 +85,9 @@
             O()?.setPendingCount?.(pendingCount);
           } else {
             refreshPendingFromSw();
+          }
+          if (r?.ok && payload.requestNext) {
+            openNextFromQueue();
           }
         }
       );
@@ -192,7 +197,8 @@
     }
 
     if (msg.type === 'RRH_SETTINGS_UPDATED') {
-      applySettings(msg.settings || {});
+      const becameAiEnabled = applySettings(msg.settings || {});
+      if (becameAiEnabled) runAnalyze(true);
       sendResponse({ ok: true });
       return true;
     }
@@ -313,10 +319,13 @@
 
     const posts = S()?.scrapePosts?.() || [];
     if (!posts.length) return;
+    const openItemId = force ? O()?.getCurrentId?.() : null;
     const detailPost = posts.find((post) => post.existingComments?.length);
-    const forceId = detailPost && (force || !detailAssistedIds.has(detailPost.id))
-      ? detailPost.id
-      : undefined;
+    const forceId = openItemId && posts.some((post) => post.id === openItemId)
+      ? openItemId
+      : detailPost && (force || !detailAssistedIds.has(detailPost.id))
+        ? detailPost.id
+        : undefined;
 
     const batch = [];
     for (const p of posts) {
@@ -396,9 +405,13 @@
   }
 
   function applySettings(s) {
+    const nextAiEnabled = !!s.apiKey && s.aiDataConsent === true;
+    const becameAiEnabled = aiEnabled === false && nextAiEnabled;
+    aiEnabled = nextAiEnabled;
     followEnabled = s.followEnabled !== false;
     cruiseSpeed = s.cruiseSpeed || 'normal';
     updateCruiseBar();
+    return becameAiEnabled;
   }
 
   function startCruise() {

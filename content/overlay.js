@@ -300,7 +300,9 @@
     const titleZh = item.titleZh || post.title || '';
     const bodyZh = item.bodyZh || '';
     const freshAngle = item.freshAngle || '';
-    const tips = (item.tips || []).slice(0, 2);
+    const tips = (item.tips || [])
+      .filter((tip) => !/配置\s*DeepSeek|未配置\s*API\s*Key/i.test(String(tip || '')))
+      .slice(0, 2);
     const reviewed = Number(item.commentsReviewed) || 0;
     const url = discussionUrl(post);
 
@@ -380,10 +382,14 @@
     }
     if (act === 'skip') {
       const id = currentItem.id;
-      onAction('skipped', { id, resumeCruise: true, continueAnalyze: true });
+      onAction('skipped', {
+        id,
+        resumeCruise: true,
+        continueAnalyze: true,
+        requestNext: true,
+      });
       RRH.hide();
       showToast('已跳过');
-      onAction('request-next', {});
       return;
     }
     if (act === 'stash' || act === 'later' || act === 'dismiss') {
