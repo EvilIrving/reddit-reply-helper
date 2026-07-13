@@ -153,7 +153,7 @@
     }
     .actions {
       display: grid;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 6px;
       align-items: center;
     }
@@ -174,24 +174,6 @@
     }
     .btn:hover { filter: brightness(1.08); }
     .btn:active { transform: translateY(1px); }
-    .btn.primary {
-      grid-column: span 9;
-      background: #ff4500;
-      border-color: #ff4500;
-      color: #fff;
-    }
-    .btn.secondary {
-      grid-column: span 3;
-      background: transparent;
-      color: #d7dadc;
-    }
-    .btn.utility {
-      grid-column: span 4;
-      background: transparent;
-      color: #b8b8ba;
-      font-weight: 500;
-    }
-    .btn.skip { color: #f0a0a0; }
 
     /* —— Single persistent assistant entry —— */
     .dock {
@@ -337,11 +319,11 @@
         <label class="label" for="rrh-draft">回复草稿</label>
         <textarea class="ta" id="rrh-draft" data-draft rows="4">${escapeHtml(draft)}</textarea>
         <div class="actions">
-          <button type="button" class="btn primary" data-act="fill">写回复</button>
-          <button type="button" class="btn secondary" data-act="stash">先收着</button>
-          <button type="button" class="btn utility" data-act="locate">定位</button>
-          <a class="btn utility" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" data-act="open">打开</a>
-          <button type="button" class="btn utility skip" data-act="skip">跳过</button>
+          <button type="button" class="btn" data-act="fill">写回复</button>
+          <button type="button" class="btn" data-act="stash">先收着</button>
+          <button type="button" class="btn" data-act="locate">定位</button>
+          <a class="btn" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" data-act="open">打开</a>
+          <button type="button" class="btn" data-act="skip">跳过</button>
         </div>
       </div>
     `;
