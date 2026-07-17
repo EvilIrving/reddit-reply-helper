@@ -1,120 +1,36 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Reddit 协作助手</title>
-    <link rel="stylesheet" href="sidepanel.css" />
-  </head>
-  <body>
-    <nav class="tabs" aria-label="侧栏导航">
-      <button type="button" class="tab active" data-tab="queue" aria-selected="true">队列</button>
-      <button type="button" class="tab" data-tab="daily" aria-selected="false">今日发帖</button>
-      <button type="button" class="tab" data-tab="settings" aria-selected="false">设置</button>
-    </nav>
-
-    <!-- QUEUE -->
-    <section id="tab-queue" class="tab-panel">
-      <div class="toolbar">
-        <button id="btnForceScan" class="btn" type="button">立即分析</button>
-        <button id="btnCruise" class="btn" type="button" aria-pressed="false">开始巡航</button>
-      </div>
-      <p id="queueStatus" class="status" aria-live="polite">滚动 Reddit 列表页即可发现候选。</p>
-      <div class="queue-tools" aria-label="队列清理">
-        <button id="btnClearProcessed" class="icon-action" type="button" title="清理已处理" aria-label="清理已处理">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5M4 20h6l8-8-6-6-8 8v6Zm2-2v-3.2l6-6 3.2 3.2-6 6H6Z"/></svg>
-        </button>
-        <button id="btnClearAll" class="icon-action" type="button" title="全部清空" aria-label="全部清空">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
-        </button>
-      </div>
-      <div id="queueList" class="list"></div>
-    </section>
-
-    <!-- DAILY -->
-    <section id="tab-daily" class="tab-panel hidden">
-      <div class="toolbar">
-        <button id="btnDailyAction" class="btn primary main-action" type="button">生成 3 个候选</button>
-      </div>
-      <p id="dailyStatus" class="status" aria-live="polite">进入本页后生成 3 个候选。</p>
-      <div id="dailyCard" class="daily-card empty">尚未生成</div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="tab-settings" class="tab-panel hidden">
-      <form id="settingsForm" class="filters">
-        <fieldset class="settings-group">
-          <legend>常用</legend>
-          <label class="field check">
-            <input name="followEnabled" type="checkbox" />
-            <span>跟随滚动自动分析</span>
-          </label>
-          <label class="field">
-            <span>评分模式</span>
-            <select name="scoringMode">
-              <option value="local">本地评分</option>
-              <option value="ai">AI 评分</option>
-            </select>
-          </label>
-          <label class="field row">
-            <span>推荐最低分</span>
-            <input name="minScore" type="number" min="0" max="100" />
-          </label>
-          <label class="field">
-            <span>草稿语言</span>
-            <select name="language">
-              <option value="zh">中文</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>人设</span>
-            <input name="persona" type="text" />
-          </label>
-        </fieldset>
-
-        <fieldset class="settings-group">
-          <legend>AI</legend>
-          <label class="field">
-            <span>API Key</span>
-            <input name="apiKey" type="password" autocomplete="off" placeholder="sk-..." />
-          </label>
-          <label class="field check consent">
-            <input name="aiDataConsent" type="checkbox" />
-            <span>同意将候选帖子、可见评论和主动翻译的文本发送到所填 AI 服务</span>
-          </label>
-          <p class="muted">未同意时只使用本地评分与模板，不会向 AI 服务发送内容。</p>
-          <label class="field">
-            <span>API Base</span>
-            <input name="apiBase" type="text" placeholder="https://api.deepseek.com/v1" />
-          </label>
-          <label class="field">
-            <span>Model</span>
-            <input name="model" type="text" placeholder="deepseek-chat" />
-          </label>
-        </fieldset>
-
-        <fieldset class="settings-group">
-          <legend>自动化</legend>
-          <label class="field">
-            <span>巡航速度</span>
-            <select name="cruiseSpeed">
-              <option value="slow">慢</option>
-              <option value="normal">正常</option>
-              <option value="fast">快</option>
-            </select>
-          </label>
-        </fieldset>
-
-        <button type="submit" class="btn primary full">保存设置</button>
-      </form>
-      <p id="settingsStatus" class="status" aria-live="polite"></p>
-    </section>
-
-    <footer class="footer">
-      <p>只辅助判断与写作，不自动发送。</p>
-    </footer>
-
-    <script type="module" src="sidepanel.js"></script>
-  </body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reddit 协作助手</title><link rel="stylesheet" href="sidepanel.css"><link rel="stylesheet" href="sidepanel-v1.css"></head><body>
+<header class="app-head"><strong>协作回复</strong><span id="edition" class="edition">Free</span></header>
+<nav class="tabs" aria-label="主导航"><button class="tab active" data-tab="discover">发现</button><button class="tab" data-tab="drafts">草稿</button><button class="tab" data-tab="queue">队列</button><button class="tab" data-tab="settings">设置</button></nav>
+<main>
+<section id="tab-discover" class="panel">
+  <div class="live-bar">
+    <label class="check live-toggle"><input id="followEnabled" type="checkbox" checked><span>实时监控</span></label>
+    <button id="cruiseToggle" class="btn compact" type="button" aria-pressed="false">巡航</button>
+    <button id="forceScan" class="text-btn" type="button">扫描本页</button>
+  </div>
+  <p id="discoverStatus" class="status">打开 Reddit 刷帖，右侧会弹出推荐。</p>
+  <button id="scan" class="btn primary full" type="button">理解当前讨论</button>
+  <div id="threadActions" class="action-row hidden">
+    <button id="stashCurrent" class="btn" type="button" disabled>加入待办</button>
+    <button id="goDraft" class="btn" type="button" disabled>去写回复</button>
+  </div>
+  <div id="currentThread" class="stack"></div>
+  <div class="section-head"><strong>发现</strong></div>
+  <div id="discoveries" class="stack"></div>
+</section>
+<section id="tab-drafts" class="panel hidden"><div class="context-bar"><span id="activeProduct">纯参与</span><select id="promo"><option value="none">不推广</option><option value="soft">自然提及</option><option value="direct">直接介绍</option></select></div><div class="segmented"><button class="seg active" data-mode="reply">回复</button><button class="seg pro" data-mode="polish">润色</button><button class="seg pro" data-mode="post">发帖</button><button class="seg" data-mode="translate">翻译</button></div><form id="generateForm"><label id="subField" class="field"><span>Subreddit</span><input name="subreddit" placeholder="例如 macapps"></label><label class="field"><span id="ideaLabel">补充要求，可留空</span><textarea name="input" rows="5" placeholder="回复会读取当前页面；也可在这里补充你的观点"></textarea></label><div class="inline"><label class="field"><span>语气</span><select name="tone"><option value="casual">随意</option><option value="professional">专业</option><option value="enthusiastic">热情</option><option value="supportive">支持</option><option value="skeptical">质疑</option></select></label><label class="field"><span>长度</span><select name="length"><option value="short">短</option><option value="medium" selected>中</option><option value="long">长</option></select></label></div><button class="btn primary full" type="submit">生成草稿</button></form><p id="generateStatus" class="status" aria-live="polite"></p><div id="results" class="stack"></div></section>
+<section id="tab-queue" class="panel hidden"><div class="section-head"><strong>待办</strong><button id="exportCsv" class="text-btn pro">导出 CSV</button></div><label class="field pro"><span>按 subreddit 筛选</span><select id="queueFilter"><option value="">全部</option></select></label><div id="queueList" class="stack"></div><details class="pro-section"><summary>节奏与效果 <span class="pro">Pro</span></summary><div id="healthCard" class="card"></div><form id="trackingForm"><label class="field"><span>已发送回复链接</span><input name="permalink" type="url" required placeholder="https://www.reddit.com/r/..."></label><label class="check"><input name="isPromo" type="checkbox"> 这是推广型回复</label><button class="btn full" type="submit">登记回复</button></form><div id="trackingList" class="stack compact"></div></details></section>
+<section id="tab-settings" class="panel hidden">
+<form id="settingsForm">
+<details open><summary>AI 服务</summary><label class="field"><span>Base URL</span><input name="baseUrl"></label><label class="field"><span>Model</span><input name="model"></label><label class="field"><span>API Key</span><input name="apiKey" type="password" autocomplete="off"></label></details>
+<details><summary>Persona <span class="pro">Pro</span></summary><label class="field"><span>身份</span><input name="personaName" maxlength="120" placeholder="例如：独立开发者"></label><label class="field"><span>背景</span><textarea name="personaBackground" maxlength="1500" placeholder="例如：做过三年 macOS 工具，平时关注效率软件"></textarea></label><label class="field"><span>口吻</span><input name="personaVoice" maxlength="300" placeholder="直接、随意，偶尔自嘲"></label><label class="field"><span>禁忌</span><textarea name="personaTaboos" maxlength="500" placeholder="例如：不装专家，不贬低竞品"></textarea></label><details><summary>写好 Persona 的三条建议</summary><p class="muted">只写真实身份与经历；描述你自然说话的方式；明确绝不冒充的资历和不表达的立场。</p></details></details>
+</form>
+<details><summary>产品库 <span class="pro">Pro</span></summary><form id="productForm"><input name="id" type="hidden"><label class="field"><span>产品网址</span><input name="url" type="url" placeholder="https://..."></label><label class="field"><span>名称</span><input name="name" maxlength="120"></label><label class="field"><span>简介</span><textarea name="desc" maxlength="1000"></textarea></label><button class="btn full pro" type="submit">保存产品</button></form><div id="productList" class="stack compact"></div></details>
+<details><summary>自定义 Prompt <span class="pro">Pro</span></summary><label class="field"><span>管线</span><select id="promptPipeline"><option value="reply">回复</option><option value="post">发帖</option><option value="translate">翻译</option><option value="polish">润色</option></select></label><div id="variableButtons" class="chips"></div><label class="field"><span>模板 <output id="promptCount">0 字符</output></span><textarea id="promptEditor" rows="12"></textarea></label><p id="promptUpdate" class="status"></p><details id="promptDiff" class="hidden"><summary>查看官方模板差异</summary><pre id="promptDefault"></pre></details><div class="actions"><button id="restorePrompt" class="btn" type="button">恢复默认</button><button id="savePrompt" class="btn primary pro" type="button">校验并保存</button></div></details>
+<details><summary>激活 Pro</summary><p class="muted">Pro 功能需要激活码。添加微信 <strong>heyiwuyi</strong>，任意方式付款后即刻发码。早鸟买断 ¥99（前 50 名，之后 ¥199），永久使用，含后续全部更新。无订阅、无账号、数据全在你本机。</p><label class="field"><span>激活码</span><input name="licenseKey" form="settingsForm"></label><button id="activate" class="btn" type="button">验证并激活</button></details>
+<details><summary>偏好与数据</summary><label class="check"><input name="healthCardEnabled" type="checkbox" form="settingsForm"> 显示节奏卡片</label><div class="actions spaced"><button id="exportData" class="btn" type="button">导出全部</button><label class="btn file">导入备份<input id="importData" type="file" accept="application/json"></label></div></details>
+<details class="pro-section"><summary>后台搜索 <span class="pro">Pro</span></summary><p class="muted">可选的定时搜索，与页面滚动实时发现无关。</p><form id="monitorForm"><label class="field"><span>搜索词</span><input name="keyword" required maxlength="120"></label><label class="field"><span>版块，逗号分隔；留空为 all</span><input name="subreddits" placeholder="macapps, SideProject"></label><label class="field"><span>间隔（分钟，最短 15）</span><input name="intervalMinutes" type="number" min="15" max="1440" value="15" required></label><div class="actions"><button class="btn pro" type="submit">添加</button><button id="runMonitors" class="btn pro" type="button">立即检查</button></div></form><div id="monitorList" class="stack compact"></div></details>
+<button class="btn primary full" type="submit" form="settingsForm">保存设置</button>
+<p id="settingsStatus" class="status" aria-live="polite"></p>
+</section>
+</main><footer>只辅助判断与写作，不自动发送。</footer><dialog id="proDialog"><h2>需要 Pro</h2><p>Pro 功能需要激活码。添加微信 <strong>heyiwuyi</strong>，任意方式付款后即刻发码。早鸟买断 ¥99（前 50 名，之后 ¥199），永久使用，含后续全部更新。无订阅、无账号、数据全在你本机。</p><button class="btn primary full" data-close>知道了</button></dialog><script type="module" src="sidepanel.js"></script></body></html>

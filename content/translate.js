@@ -1,18 +1,13 @@
 /**
- * Adds Chinese-to-English translation to Reddit composers.
+ * Adds Chinese idea polishing to Reddit composers and English-to-Chinese reading translation.
  * It only fills fields and never submits content.
  */
 (function () {
   const BUTTON_CLASS = 'rrh-translate-btn';
+  const READ_BUTTON_CLASS = 'rrh-read-translate-btn';
   const HANDOFF_KEY = 'rrh_composer_handoff';
   const COMPOSER = (globalThis.RRH_COMPOSER = globalThis.RRH_COMPOSER || {});
-  const ICON = `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-        <path d="M9 6.4C9 10.8 6.8 13 4 13M4 6.4h7M5 9c0 2.1 2.3 3.9 6 4"/>
-        <path d="m12 20 4-9 4 9m-.9-2h-6.2M6.7 3l.8.6"/>
-      </g>
-    </svg>`;
+  const ICON = '<span aria-hidden="true">✎</span>';
   const SHADOW_STYLES = `
     .${BUTTON_CLASS}{display:inline-flex;align-items:center;justify-content:center;min-width:2rem;height:2rem;border:0;background:transparent;color:var(--rte-toolbar-button-color,var(--color-secondary-weak,#7c8082));cursor:pointer;border-radius:9999px;padding:0 6px;line-height:0}
     .${BUTTON_CLASS} svg{width:20px;height:20px}
@@ -46,7 +41,23 @@
   function scan() {
     for (const toolbar of deepQueryAll('rte-toolbar')) injectNewReddit(toolbar);
     injectOldReddit();
+    injectReadingButtons();
     fillQueuedDraft();
+  }
+
+  function injectReadingButtons() {
+    const selectors = 'shreddit-post [slot="text-body"], shreddit-comment [slot="comment"], .thing .usertext-body .md';
+    document.querySelectorAll(selectors).forEach((body) => {
+      if (body.dataset.rrhReadTranslate || body.textContent.trim().length < 12) return;
+      body.dataset.rrhReadTranslate = '1';
+      const button = document.createElement('button'); button.type = 'button'; button.className = READ_BUTTON_CLASS; button.textContent = '译为中文';
+      button.addEventListener('click', async () => {
+        if (button.disabled) return; button.disabled = true; button.textContent = '翻译中…';
+        try { const res = await chrome.runtime.sendMessage({ type:'RRH_TRANSLATE_READING', text:body.textContent.trim() }); if(!res?.ok)throw new Error(res?.error||'翻译失败'); let box=body.parentElement.querySelector(':scope > .rrh-reading-translation'); if(!box){box=document.createElement('div');box.className='rrh-reading-translation';body.insertAdjacentElement('afterend',box);} const data=res.result.data,notes=(data.notes||[]).map(item=>`${item.span_en}：${item.note_zh}`).join('\n');box.textContent=[data.translation_zh,data.tone_zh,notes].filter(Boolean).join('\n\n'); button.textContent='已翻译'; }
+        catch(error){button.textContent='重试';notify(error.message);} finally{button.disabled=false;}
+      });
+      body.insertAdjacentElement('afterend', button);
+    });
   }
 
   function queueComposerDraft(payload) {
@@ -154,7 +165,7 @@
     document.querySelectorAll('.usertext-edit textarea, textarea[name="text"]').forEach((bodyField) => {
       const form = bodyField.closest('form');
       if (!form || form.querySelector(`.${BUTTON_CLASS}.rrh-old`)) return;
-      const button = makeButton('中译英');
+      const button = makeButton('润色');
       button.classList.add('rrh-old');
       button.addEventListener('click', async () => {
         const titleField = form.querySelector('textarea[name="title"], input[name="title"]');
@@ -173,12 +184,12 @@
   async function translateComposer(button, composer) {
     if (button.disabled) return;
     if (!composer.title && !composer.body) {
-      setButtonState(button, 'error', '没有可翻译的内容');
-      notify('没有可翻译的内容');
+      setButtonState(button, 'error', '没有可润色的内容');
+      notify('没有可润色的内容');
       return;
     }
     button.disabled = true;
-    setButtonState(button, 'loading', '翻译中…');
+    setButtonState(button, 'loading', '润色中…');
     try {
       const [title, body] = await Promise.all([
         composer.title ? requestTranslation(composer.title) : null,
@@ -186,10 +197,10 @@
       ]);
       if (title !== null) composer.setTitle(title);
       if (body !== null) composer.setBody(body);
-      setButtonState(button, 'done', '已翻译为英文');
-      notify('已翻译为英文');
+      setButtonState(button, 'done', '已转成地道英文');
+      notify('已转成地道英文，请检查后手动发送');
     } catch (error) {
-      const message = `翻译失败：${error?.message || error}`;
+      const message = `润色失败：${error?.message || error}`;
       setButtonState(button, 'error', message);
       notify(message);
     } finally {
@@ -199,10 +210,10 @@
 
   async function requestTranslation(text) {
     const response = await chrome.runtime.sendMessage({
-      type: 'RRH_TRANSLATE_TO_ENGLISH',
+      type: 'RRH_POLISH_COMPOSER',
       text,
     });
-    if (!response?.ok) throw new Error(response?.error || '翻译失败');
+    if (!response?.ok) throw new Error(response?.error || '润色失败');
     return String(response.translated || '').trim();
   }
 
@@ -210,8 +221,8 @@
     const button = document.createElement('button');
     button.type = 'button';
     button.className = BUTTON_CLASS;
-    button.title = '把当前内容翻译为自然英文';
-    button.setAttribute('aria-label', '翻译为英文');
+    button.title = '转成地道英文';
+    button.setAttribute('aria-label', '转成地道英文');
     button.innerHTML = `${ICON}${label ? `<span>${label}</span>` : ''}`;
     return button;
   }
@@ -224,8 +235,8 @@
     if (state === 'done' || state === 'error') {
       button._rrhStateTimer = setTimeout(() => {
         button.dataset.state = '';
-        button.title = '把当前内容翻译为自然英文';
-        button.setAttribute('aria-label', '翻译为英文');
+        button.title = '转成地道英文';
+        button.setAttribute('aria-label', '转成地道英文');
       }, 3500);
     }
   }

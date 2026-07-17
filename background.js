@@ -1,212 +1,189 @@
-import { analyzePosts, resolveRecommendation, getNextPending } from './lib/analyze.js';
-import {
-  getSettings,
-  saveSettings,
-  getQueue,
-  countPendingQueue,
-  recordVisitedSubs,
-  getVisitedSubs,
-  setRecentSubs,
-  updateQueueItem,
-  removeProcessedQueueItems,
-  clearQueue,
-} from './lib/settings.js';
-import { ensureDailyPost, setDailyStatus } from './lib/daily.js';
-import { translateToEnglish } from './lib/deepseek.js';
+import { getState, setState, recordUsage, exportState, parseImportedState } from './lib/store.js';
+import { runPipeline } from './lib/pipelines.js';
+import { verifyLicense, isPro } from './lib/license.js';
+import { runMonitors, ensureSubredditRules, refreshSentReplies } from './lib/reddit-client.js';
+import { PRO_MESSAGE, sanitizeState } from './lib/entitlements.js';
+import { analyzeLivePosts, resolveLiveItem, getNextLiveDiscovery } from './lib/live-discover.js';
 
 chrome.runtime.onInstalled.addListener(async () => {
-  try {
-    await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  } catch {
-    /* ignore */
-  }
-  refreshBadge();
+  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  await installAlarms();
+  await refreshBadge();
 });
-
-chrome.action.onClicked.addListener(async (tab) => {
-  if (!tab.id) return;
+chrome.runtime.onStartup.addListener(installAlarms);
+chrome.alarms.onAlarm.addListener(async ({ name }) => {
   try {
-    await chrome.sidePanel.open({ tabId: tab.id });
-  } catch {
-    /* ignore */
+    if (name === 'rrh-monitor') await runMonitors();
+    if (name === 'rrh-tracking') await refreshSentReplies();
+    await refreshBadge();
+  } catch (error) {
+    console.warn('[RRH]', error.message);
   }
 });
-
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  handleMessage(msg, sender)
-    .then(sendResponse)
-    .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  handleMessage(message, sender).then(respond).catch((error) => respond({ ok: false, error: error.message, raw: error.raw || '' }));
   return true;
 });
+chrome.storage.onChanged.addListener((_changes, area) => { if (area === 'local') refreshBadge(); });
 
-/**
- * @param {any} msg
- * @param {chrome.runtime.MessageSender} sender
- */
-async function handleMessage(msg, sender) {
-  if (!msg?.type) return { ok: false, error: 'no type' };
+async function installAlarms() {
+  await chrome.alarms.create('rrh-monitor', { periodInMinutes: 15 });
+  await chrome.alarms.create('rrh-tracking', { periodInMinutes: 60 });
+}
 
-  switch (msg.type) {
-    case 'RRH_GET_SETTINGS':
-      return {
-        ok: true,
-        settings: await getSettings(),
-      };
-
-    case 'RRH_RECORD_VISITED': {
-      const visited = await recordVisitedSubs(msg.subs || msg.sub || []);
-      return { ok: true, visited };
+async function handleMessage(message, sender) {
+  if (!message?.type) return { ok: false, error: '消息类型缺失' };
+  switch (message.type) {
+    case 'RRH_V1_GET_STATE': {
+      const state = await getState();
+      return { ok: true, state, pro: isPro(state.license), proMessage: PRO_MESSAGE };
     }
-
-    case 'RRH_GET_VISITED':
-      return { ok: true, visited: await getVisitedSubs() };
-
-    case 'RRH_SET_RECENT_SUBS': {
-      const recent = await setRecentSubs(msg.subs || []);
-      return { ok: true, recent };
+    case 'RRH_V1_SET_STATE': {
+      const current = await getState();
+      const next = sanitizeState(message.state || {}, isPro(current.license));
+      next.license = current.license;
+      return { ok: true, state: await setState(next) };
     }
-
-    case 'RRH_SAVE_SETTINGS': {
-      const settings = await saveSettings(msg.patch || {});
-      // notify all reddit tabs
-      broadcastToReddit({ type: 'RRH_SETTINGS_UPDATED', settings });
-      return { ok: true, settings };
+    case 'RRH_RUN_PIPELINE':
+      return runRequestedPipeline(message);
+    case 'RRH_VALIDATE_PROMPT':
+      return validatePrompt(message);
+    case 'RRH_ACTIVATE': {
+      const license = await verifyLicense(message.key);
+      const state = await getState();
+      state.license = license;
+      await setState(state);
+      return { ok: true, license };
     }
-
+    case 'RRH_EXPORT':
+      return { ok: true, json: await exportState() };
+    case 'RRH_IMPORT': {
+      const imported = parseImportedState(message.json);
+      let license = null;
+      if (imported.license?.key) license = await verifyLicense(imported.license.key);
+      imported.license = license;
+      const state = sanitizeState(imported, isPro(license));
+      await setState(state);
+      return { ok: true, state };
+    }
+    case 'RRH_RUN_MONITORS': {
+      const state = await getState();
+      if (!isPro(state.license)) return { ok: false, error: PRO_MESSAGE };
+      const result = await runMonitors();
+      await refreshBadge();
+      return { ok: true, ...result };
+    }
+    case 'RRH_GET_RULES': {
+      const state = await getState();
+      if (!isPro(state.license)) return { ok: true, rules: { raw: '', summary_zh: '', promoStance: 'unknown' } };
+      return { ok: true, rules: await ensureSubredditRules(message.subreddit, state) };
+    }
+    case 'RRH_MARK_DISCOVERIES_READ': {
+      const state = await getState();
+      state.discoveries.forEach((item) => { item.unread = false; });
+      await setState(state);
+      await refreshBadge();
+      return { ok: true };
+    }
+    case 'RRH_REFRESH_TRACKING': {
+      const state = await getState();
+      if (!isPro(state.license)) return { ok: false, error: PRO_MESSAGE };
+      return { ok: true, checked: await refreshSentReplies() };
+    }
+    case 'RRH_GET_QUEUE': {
+      const state = await getState();
+      return { ok: true, queue: state.todos, pending: state.todos.filter((item) => item.status === 'pending').length };
+    }
+    case 'RRH_EXTRACT_PRODUCT':
+      return extractProductFromActiveTab(message.url);
+    case 'RRH_TRANSLATE_READING':
+      return runReadingTranslation(message.text);
+    case 'RRH_POLISH_COMPOSER':
+      return runComposerPolish(message, sender);
+    case 'RRH_OPEN_SIDE_PANEL':
+      if (sender.tab?.id) await chrome.sidePanel.open({ tabId: sender.tab.id });
+      return { ok: true };
     case 'RRH_ANALYZE_POSTS': {
-      const result = await analyzePosts(msg.posts || [], { forceId: msg.forceId });
-      if (result.recommendation && sender.tab?.id) {
-        try {
-          await chrome.tabs.sendMessage(sender.tab.id, {
-            type: 'RRH_SHOW_OVERLAY',
-            item: result.recommendation,
-            settingsHint: result.settingsHint,
-            pending: result.pending,
-          });
-        } catch {
-          /* tab may not have overlay yet */
-        }
-      } else if (sender.tab?.id && typeof result.pending === 'number') {
-        try {
-          await chrome.tabs.sendMessage(sender.tab.id, {
-            type: 'RRH_PENDING_UPDATE',
-            pending: result.pending,
-          });
-        } catch {
-          /* ignore */
-        }
-      }
+      const result = await analyzeLivePosts(message.posts || [], {
+        forceId: message.forceId,
+        force: !!message.force,
+        overlayOpen: !!message.overlayOpen,
+      });
+      await refreshBadge();
       return result;
     }
-
-    case 'RRH_RESOLVE': {
-      const r = await resolveRecommendation(msg.id, msg.status);
-      if (sender.tab?.id) {
-        try {
-          await chrome.tabs.sendMessage(sender.tab.id, {
-            type: 'RRH_OVERLAY_RESOLVED',
-            id: msg.id,
-            status: msg.status,
-            resumeCruise: !!msg.resumeCruise,
-            pending: r.pending,
-          });
-        } catch {
-          /* ignore */
-        }
-      }
-      return r;
-    }
-
-    case 'RRH_GET_QUEUE':
-      return { ok: true, queue: await getQueue(), pending: await countPendingQueue() };
-
-    case 'RRH_UPDATE_QUEUE_ITEM': {
-      await updateQueueItem(msg.id, msg.patch || {});
-      return { ok: true };
-    }
-
-    case 'RRH_CLEAR_PROCESSED': {
-      const queue = await removeProcessedQueueItems();
+    case 'RRH_RESOLVE_LIVE': {
+      const result = await resolveLiveItem(message.id, message.status);
       await refreshBadge();
-      return { ok: true, queue, pending: await countPendingQueue() };
+      return result;
     }
-
-    case 'RRH_CLEAR_QUEUE': {
-      const queue = await clearQueue();
-      await refreshBadge();
-      broadcastToReddit({ type: 'RRH_PENDING_UPDATE', pending: 0 });
-      return { ok: true, queue, pending: 0 };
-    }
-
-    case 'RRH_TRANSLATE_TO_ENGLISH': {
-      const text = String(msg.text || '').trim();
-      if (!text) return { ok: false, error: '没有可翻译的内容' };
-      if (text.length > 12000) return { ok: false, error: '内容过长，请缩短后再试' };
-      const settings = await getSettings();
-      const translated = await translateToEnglish(text, settings);
-      return { ok: true, translated };
-    }
-
-    case 'RRH_GET_NEXT_PENDING':
-      return getNextPending(msg.excludeId);
-
-    case 'RRH_ENSURE_DAILY':
-      return ensureDailyPost({ force: !!msg.force, subs: msg.subs });
-
-    case 'RRH_DAILY_STATUS':
-      return setDailyStatus(msg.status, msg.candidateIndex);
-
-    case 'RRH_OPEN_SIDE_PANEL': {
-      if (sender.tab?.id) {
-        try {
-          await chrome.sidePanel.open({ tabId: sender.tab.id });
-        } catch {
-          /* ignore */
-        }
-      }
-      return { ok: true };
-    }
-
-    case 'RRH_CRUISE_STATE':
-      // content informs SW — optional logging
-      return { ok: true };
-
+    case 'RRH_GET_NEXT_LIVE':
+      return getNextLiveDiscovery(message.excludeId);
     default:
-      return { ok: false, error: `unknown type ${msg.type}` };
+      return { ok: false, error: `未知消息类型：${message.type}` };
   }
+}
+
+async function runRequestedPipeline(message) {
+  const state = await getState();
+  const pro = isPro(state.license);
+  if (['post', 'polish'].includes(message.pipeline) && !pro) return { ok: false, error: PRO_MESSAGE };
+  if (!state.settings.ai.apiKey) return { ok: false, error: '请先在设置中填写 API Key' };
+  const context = { ...(message.context || {}) };
+  if (!pro && message.pipeline === 'reply') Object.assign(context, { persona_name: '', persona_background: '', persona_voice: '', persona_taboos: '', product_name: '', product_url: '', product_desc: '', promo_mode: 'none', tone: 'casual' });
+  if (pro && ['reply', 'post'].includes(message.pipeline) && context.subreddit) {
+    const rules = await ensureSubredditRules(context.subreddit, state);
+    context.subreddit_rules = rules.raw;
+  }
+  const result = await runPipeline(message.pipeline, context, state, pro);
+  if (!pro && message.pipeline === 'translate') result.data = { translation_zh: result.data.translation_zh };
+  await recordUsage(result.usage?.total_tokens || 0);
+  return { ok: true, result };
+}
+
+async function validatePrompt(message) {
+  const state = await getState();
+  if (!isPro(state.license)) return { ok: false, error: PRO_MESSAGE };
+  const type = String(message.pipeline || '');
+  const temporary = structuredClone(state);
+  temporary.settings.promptOverrides[type] = { text: String(message.text || ''), basedOnVersion: Number(message.basedOnVersion || 0) };
+  const result = await runPipeline(type, message.context || {}, temporary, true);
+  await recordUsage(result.usage?.total_tokens || 0);
+  return { ok: true };
+}
+
+async function runReadingTranslation(text) {
+  const state = await getState();
+  if (!state.settings.ai.apiKey) return { ok: false, error: '请先在侧栏设置 API Key' };
+  const result = await runPipeline('translate', { source_text: String(text || '').trim().slice(0, 12000) }, state, isPro(state.license));
+  if (!isPro(state.license)) result.data = { translation_zh: result.data.translation_zh };
+  await recordUsage(result.usage?.total_tokens || 0);
+  return { ok: true, result };
+}
+
+async function runComposerPolish(message, sender) {
+  const state = await getState();
+  if (!isPro(state.license)) return { ok: false, error: PRO_MESSAGE };
+  const text = String(message.text || '').trim();
+  if (!text) return { ok: false, error: '请先输入中文观点' };
+  const subreddit = sender.tab?.url?.match(/\/r\/([^/]+)/i)?.[1] || '';
+  const context = { user_idea: text, persona_name: state.persona.name, persona_voice: state.persona.voice, tone: state.settings.defaults.tone, length: state.settings.defaults.length, subreddit, thread_context: String(message.threadContext || '').slice(0, 6000), promo_mode: 'none' };
+  const result = await runPipeline('polish', context, state, true);
+  await recordUsage(result.usage?.total_tokens || 0);
+  return { ok: true, translated: result.data.reply_en };
+}
+
+async function extractProductFromActiveTab(requestedUrl) {
+  const requested = new URL(requestedUrl);
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || !tab.url || new URL(tab.url).origin !== requested.origin) return { ok: false, error: '请先在当前标签页打开该产品网址，然后重试' };
+  const [result] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => ({ title: document.querySelector('meta[property="og:title"]')?.content || document.title || '', description: document.querySelector('meta[name="description"]')?.content || document.querySelector('meta[property="og:description"]')?.content || '' }) });
+  return { ok: true, ...result.result };
 }
 
 async function refreshBadge() {
-  try {
-    const n = await countPendingQueue();
-    await chrome.action.setBadgeText({ text: n > 0 ? String(n) : '' });
-    await chrome.action.setBadgeBackgroundColor({ color: '#ff4500' });
-  } catch {
-    /* ignore */
-  }
-}
-
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'local' && changes.rrh_queue) refreshBadge();
-});
-
-/**
- * @param {any} message
- */
-async function broadcastToReddit(message) {
-  try {
-    const tabs = await chrome.tabs.query({
-      url: ['*://www.reddit.com/*', '*://old.reddit.com/*', '*://new.reddit.com/*'],
-    });
-    for (const t of tabs) {
-      if (!t.id) continue;
-      try {
-        await chrome.tabs.sendMessage(t.id, message);
-      } catch {
-        /* ignore */
-      }
-    }
-  } catch {
-    /* ignore */
-  }
+  const state = await getState();
+  const total = state.todos.filter((item) => item.status === 'pending').length + state.discoveries.filter((item) => item.unread).length;
+  await chrome.action.setBadgeText({ text: total ? String(total) : '' });
+  await chrome.action.setBadgeBackgroundColor({ color: '#c83a08' });
 }

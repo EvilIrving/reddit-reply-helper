@@ -1,4 +1,4 @@
-import { readFile, access } from 'node:fs/promises';
+import { readFile, access, readdir } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
 const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
@@ -50,6 +50,29 @@ for (const path of files) {
   if (forbidden.some((pattern) => pattern.test(content))) {
     throw new Error(`${path} 可能包含硬编码密钥`);
   }
+}
+
+const jsFiles = (await walk('.')).filter((path) => path.endsWith('.js') && !path.includes('/build/') && !path.includes('/node_modules/'));
+const networkFiles=[];
+for (const path of jsFiles) {
+  const content = await readFile(path, 'utf8');
+  if (/\bfetch\b/.test(content) && !path.startsWith('tests/')) networkFiles.push(path);
+  if (/reddit[^\n]{0,200}method\s*:\s*['"](?:POST|PUT|DELETE|PATCH)['"]/i.test(content) || /method\s*:\s*['"](?:POST|PUT|DELETE|PATCH)['"][^\n]{0,200}reddit/i.test(content)) throw new Error(`${path} 包含 Reddit 写请求`);
+}
+const allowedNetworkFiles=new Set(['lib/ai-client.js','lib/reddit-client.js']);
+for(const path of networkFiles)if(!allowedNetworkFiles.has(path))throw new Error(`${path} 包含规格外网络请求`);
+if ((manifest.host_permissions || []).some((origin) => !/^https:\/\/(?:www|old)\.reddit\.com\/\*$/.test(origin) && origin !== 'https://api.deepseek.com/*')) throw new Error('host_permissions 超出 Reddit 与默认 AI 服务范围');
+if (JSON.stringify(manifest.optional_host_permissions || []) !== JSON.stringify(['https://*/*'])) throw new Error('optional_host_permissions 必须仅用于用户 AI Base URL');
+if (/chrome\.notifications/.test(await readFile('background.js','utf8'))) throw new Error('监控不得发送系统通知');
+
+async function walk(dir) {
+  const out=[];
+  for(const entry of await readdir(dir,{withFileTypes:true})){
+    if(['.git','.agents','.private','node_modules','build','releases'].includes(entry.name))continue;
+    const path=`${dir}/${entry.name}`;
+    if(entry.isDirectory())out.push(...await walk(path));else out.push(path.replace(/^\.\//,''));
+  }
+  return out;
 }
 
 console.log(`校验通过：manifest ${manifest.version}，${referenced.size} 个引用文件可读。`);

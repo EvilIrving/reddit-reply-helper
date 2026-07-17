@@ -15,8 +15,12 @@ const commonFiles = [
   'background.js',
   'sidepanel.html',
   'sidepanel.css',
+  'sidepanel-v1.css',
   'sidepanel.js',
-  'content',
+  'content/content.css',
+  'content/content.js',
+  'content/scrape.js',
+  'content/translate.js',
   'lib',
   'icons',
   'LICENSE',
@@ -37,8 +41,14 @@ for (const target of targets) {
   await mkdir(stage, { recursive: true });
 
   for (const entry of commonFiles) {
+    await mkdir(path.dirname(path.join(stage, entry)), { recursive: true });
     await cp(path.join(root, entry), path.join(stage, entry), { recursive: true });
   }
+  await rm(path.join(stage, 'lib', 'prompts'), { recursive: true, force: true });
+  await rm(path.join(stage, 'lib', 'license.js'), { force: true });
+  await rm(path.join(stage, 'lib', 'license.example.js'), { force: true });
+  await cp(path.join(root, '.private', 'lib', 'prompts'), path.join(stage, 'lib', 'prompts'), { recursive: true });
+  await cp(path.join(root, '.private', 'lib', 'license.js'), path.join(stage, 'lib', 'license.js'));
   await writeFile(path.join(stage, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   await validateStage(stage, manifest);
 
@@ -69,5 +79,8 @@ async function validateStage(stage, manifest) {
   for (const file of referenced) {
     if (!file) continue;
     await readFile(path.join(stage, file));
+  }
+  for (const required of ['lib/prompts/reply.js', 'lib/prompts/post.js', 'lib/prompts/translate.js', 'lib/prompts/polish.js', 'lib/prompts/safety.js', 'lib/prompts/index.js', 'lib/license.js']) {
+    await readFile(path.join(stage, required));
   }
 }

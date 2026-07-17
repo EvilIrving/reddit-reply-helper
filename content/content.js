@@ -1,55 +1,31 @@
 /**
- * Content orchestrator: follow-scroll, cruise, non-blocking inbox.
- * Overlay never blocks further analysis — stash/skip and keep browsing.
+ * Scroll-follow live discovery + optional cruise.
+ * Overlay stays non-blocking — keep browsing while recommendations queue.
  */
 (function () {
   const S = () => globalThis.RRH_SCRAPE;
   const O = () => globalThis.RRH_OVERLAY;
 
-  /** @type {Set<string>} */
   const seenIds = new Set();
-  const detailAssistedIds = new Set();
-  /** @type {boolean} */
   let followEnabled = true;
-  /** @type {boolean} */
   let analyzing = false;
-  /** @type {boolean} */
   let cruiseOn = false;
-  /** @type {boolean} */
   let cruisePaused = false;
-  /** @type {number} */
   let cruiseTimer = 0;
-  /** @type {'slow'|'normal'|'fast'} */
   let cruiseSpeed = 'normal';
-  /** @type {number} */
   let scrollTimer = 0;
-  /** @type {number} */
   let pendingCount = 0;
-  /** @type {string} */
-  let lastReportedSubPage = '';
-  /** @type {string} */
-  let lastReportedRecentSubs = '';
-  /** @type {boolean|null} */
-  let aiEnabled = null;
 
-  // Shadow-DOM chrome (overlay / dock / cruise) — isolated from Reddit CSS
   O()?.mountChrome?.();
   if (O()) {
-    O().onCruiseToggle = () => {
-      if (cruiseOn) stopCruise();
-      else startCruise();
-    };
+    O().onCruiseToggle = () => (cruiseOn ? stopCruise() : startCruise());
     O().onScanNow = () => runAnalyze(true);
   }
 
-  chrome.runtime.sendMessage({ type: 'RRH_GET_SETTINGS' }, (res) => {
-    if (res?.ok && res.settings) applySettings(res.settings);
+  chrome.runtime.sendMessage({ type: 'RRH_V1_GET_STATE' }, (res) => {
+    if (res?.ok && res.state) applySettings(res.state.settings || {});
   });
-  // any page you open counts as browsed (no sub whitelist)
-  reportCurrentSub();
-  reportRecentSidebarSubs();
-  // sync pending count
-  refreshPendingFromSw();
+  refreshPending();
 
   O()?.setActionHandler?.((action, payload) => {
     if (action === 'fill') {
@@ -70,36 +46,18 @@
     }
     if (action === 'copied' || action === 'skipped' || action === 'later') {
       const status = action === 'copied' ? 'copied' : action;
-      // copy can keep overlay open
-      const keepOpen = !!payload.keepOpen && action === 'copied';
-      chrome.runtime.sendMessage(
-        {
-          type: 'RRH_RESOLVE',
-          id: payload.id,
-          status,
-          resumeCruise: !!payload.resumeCruise,
-        },
-        (r) => {
-          if (r?.pending != null) {
-            pendingCount = r.pending;
-            O()?.setPendingCount?.(pendingCount);
-          } else {
-            refreshPendingFromSw();
-          }
-          if (r?.ok && payload.requestNext) {
-            openNextFromQueue();
-          }
-        }
-      );
-      if (!keepOpen) {
-        // skip/later already hide in overlay; ensure continue
-        if (cruiseOn && payload.resumeCruise) {
-          cruisePaused = false;
-          scheduleCruiseTick();
-        }
+      chrome.runtime.sendMessage({ type: 'RRH_RESOLVE_LIVE', id: payload.id, status }, (r) => {
+        if (r?.pending != null) {
+          pendingCount = r.pending;
+          O()?.setPendingCount?.(pendingCount);
+        } else refreshPending();
+        if (r?.ok && payload.requestNext) openNextFromQueue();
+      });
+      if (cruiseOn && payload.resumeCruise) {
+        cruisePaused = false;
+        scheduleCruiseTick();
       }
       updateCruiseBar();
-      // keep analyzing — never block
       setTimeout(() => runAnalyze(false), 400);
     }
   });
@@ -107,7 +65,8 @@
   function fillReplyComposer(payload) {
     const draft = String(payload?.draft || '').trim();
     if (!draft) {
-      O()?.notify?.('草稿为空');
+      O()?.notify?.('先到侧栏生成草稿，或点助手打开面板');
+      chrome.runtime.sendMessage({ type: 'RRH_OPEN_SIDE_PANEL' });
       return;
     }
     if (globalThis.RRH_COMPOSER?.fill?.(draft)) {
@@ -117,9 +76,8 @@
     }
     globalThis.RRH_COMPOSER?.queue?.(payload);
     const target = String(payload?.url || '');
-    if (target && target !== location.href) {
-      location.assign(target);
-    } else {
+    if (target && target !== location.href) location.assign(target);
+    else {
       O()?.hide?.();
       O()?.notify?.('点击评论框后会自动填入草稿');
     }
@@ -127,19 +85,10 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (!msg?.type) return;
-
     if (msg.type === 'RRH_PING') {
-      sendResponse({
-        ok: true,
-        meta: S()?.getPageMeta?.(),
-        cruiseOn,
-        followEnabled,
-        overlayOpen: !!O()?.isOpen?.(),
-        pendingCount,
-      });
+      sendResponse({ ok: true, meta: S()?.getPageMeta?.(), cruiseOn, followEnabled, overlayOpen: !!O()?.isOpen?.(), pendingCount });
       return true;
     }
-
     if (msg.type === 'RRH_SCRAPE') {
       try {
         sendResponse({ ok: true, posts: S()?.scrapePosts?.() || [], meta: S()?.getPageMeta?.() });
@@ -148,30 +97,15 @@
       }
       return true;
     }
-
-    if (msg.type === 'RRH_SYNC_RECENT_SUBS') {
-      const subs = collectRecentSidebarSubs();
-      sendResponse({ ok: true, subs });
-      return true;
-    }
-
     if (msg.type === 'RRH_HIGHLIGHT') {
       sendResponse({ ok: !!S()?.highlightPost?.(msg.postId) });
       return true;
     }
-
-    if (msg.type === 'RRH_MARK_RECOMMENDED') {
-      markRecommended(msg.ids || []);
-      sendResponse({ ok: true });
-      return true;
-    }
-
     if (msg.type === 'RRH_SHOW_OVERLAY') {
-      handleRecommendation(msg.item, msg.settingsHint, msg.pending);
+      handleRecommendation(msg.item, msg.pending);
       sendResponse({ ok: true });
       return true;
     }
-
     if (msg.type === 'RRH_PENDING_UPDATE') {
       if (typeof msg.pending === 'number') {
         pendingCount = msg.pending;
@@ -180,247 +114,132 @@
       sendResponse({ ok: true });
       return true;
     }
-
-    if (msg.type === 'RRH_OVERLAY_RESOLVED') {
-      if (msg.resumeCruise && cruiseOn) {
-        cruisePaused = false;
-        scheduleCruiseTick();
-      }
-      if (typeof msg.pending === 'number') {
-        pendingCount = msg.pending;
-        O()?.setPendingCount?.(pendingCount);
-      }
-      updateCruiseBar();
-      runAnalyze(false);
-      sendResponse({ ok: true });
-      return true;
-    }
-
     if (msg.type === 'RRH_SETTINGS_UPDATED') {
-      const becameAiEnabled = applySettings(msg.settings || {});
-      if (becameAiEnabled) runAnalyze(true);
+      applySettings(msg.settings || {});
       sendResponse({ ok: true });
       return true;
     }
-
     if (msg.type === 'RRH_START_CRUISE') {
       startCruise();
       sendResponse({ ok: true, cruiseOn: true });
       return true;
     }
-
     if (msg.type === 'RRH_STOP_CRUISE') {
       stopCruise();
       sendResponse({ ok: true, cruiseOn: false });
       return true;
     }
-
     if (msg.type === 'RRH_FORCE_SCAN') {
       runAnalyze(true).then(() => sendResponse({ ok: true }));
       return true;
     }
-
-    if (msg.type === 'RRH_OPEN_NEXT') {
-      openNextFromQueue().then(() => sendResponse({ ok: true }));
-      return true;
-    }
-
-    if (msg.type === 'RRH_FILL_REPLY') {
-      fillReplyComposer(msg);
-      sendResponse({ ok: true });
-      return true;
-    }
   });
 
-  window.addEventListener(
-    'scroll',
-    () => {
-      if (!followEnabled) return;
-      clearTimeout(scrollTimer);
-      scrollTimer = window.setTimeout(() => runAnalyze(false), 600);
-    },
-    { passive: true }
-  );
+  window.addEventListener('scroll', () => {
+    if (!followEnabled) return;
+    clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => runAnalyze(false), 600);
+  }, { passive: true });
 
-  setTimeout(() => {
-    reportCurrentSub();
-    reportRecentSidebarSubs();
-    if (followEnabled) runAnalyze(false);
-  }, 1500);
-  setTimeout(reportRecentSidebarSubs, 5000);
-  setTimeout(() => {
-    if (followEnabled) runAnalyze(false);
-  }, 3500);
+  setTimeout(() => { if (followEnabled) runAnalyze(false); }, 1200);
+  setTimeout(() => { if (followEnabled) runAnalyze(false); }, 3200);
 
-  // SPA navigation on new Reddit
   let lastPath = location.pathname;
   setInterval(() => {
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       seenIds.clear();
-      detailAssistedIds.clear();
-      reportCurrentSub();
-      setTimeout(reportRecentSidebarSubs, 800);
-      if (followEnabled) {
-        setTimeout(() => runAnalyze(false), 800);
-      }
+      if (followEnabled) setTimeout(() => runAnalyze(false), 800);
     }
   }, 1200);
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      clearTimeout(cruiseTimer);
-    } else if (cruiseOn && !cruisePaused) {
-      scheduleCruiseTick();
-    }
+    if (document.hidden) clearTimeout(cruiseTimer);
+    else if (cruiseOn && !cruisePaused) scheduleCruiseTick();
   });
 
-  /**
-   * New recommendation: if card already open → only inbox toast;
-   * else show full card. Never stop scrolling/analysis.
-   * @param {any} item
-   * @param {any} hint
-   * @param {number} [pending]
-   */
-  function handleRecommendation(item, hint, pending) {
+  function handleRecommendation(item, pending) {
     if (!item) return;
     if (typeof pending === 'number') {
       pendingCount = pending;
       O()?.setPendingCount?.(pendingCount);
-    } else {
-      refreshPendingFromSw();
     }
-
-    if (item.id) {
-      markRecommended([item.id]);
-    }
-
-    // Already looking at a card → don't interrupt; stash into inbox only
-    if (O()?.isOpen?.() && O()?.getCurrentId?.() && O().getCurrentId() !== item.id) {
+    if (item.post?.id) markRecommended([item.post.id]);
+    if (O()?.isOpen?.()) {
       O()?.notifyQueued?.(item, pendingCount);
       return;
     }
-
-    // Same id re-show or no card open → show
-    O()?.show?.(item, { ...(hint || {}), pending: pendingCount });
-    // Soft highlight once; user may continue scrolling
-    if (item.id) S()?.highlightPost?.(item.id);
-
-    // Cruise keeps going — user can stash anytime
-    updateCruiseBar();
+    O()?.show?.(item, { pending: pendingCount });
+    S()?.highlightPost?.(item.post?.id);
   }
 
-  /**
-   * @param {boolean} force
-   */
   async function runAnalyze(force) {
     if (analyzing) return;
-    // NOTE: deliberately do NOT block when overlay is open
-
-    const posts = S()?.scrapePosts?.() || [];
-    if (!posts.length) return;
-    const openItemId = force ? O()?.getCurrentId?.() : null;
-    const detailPost = posts.find((post) => post.existingComments?.length);
-    const forceId = openItemId && posts.some((post) => post.id === openItemId)
-      ? openItemId
-      : detailPost && (force || !detailAssistedIds.has(detailPost.id))
-        ? detailPost.id
-        : undefined;
-
-    const batch = [];
-    for (const p of posts) {
-      if (!p.id) continue;
-      if (!force && seenIds.has(p.id) && p.id !== forceId) continue;
-      seenIds.add(p.id);
-      batch.push(p);
-    }
-    if (!batch.length && !force) return;
-
+    if (!followEnabled && !force) return;
     analyzing = true;
-    setStatusChip(cruiseOn ? '巡航分析中…' : '分析中…');
+    setStatusChip(cruiseOn ? '巡航分析中…' : '实时监控中…');
     try {
+      const posts = S()?.scrapePosts?.() || [];
+      const fresh = [];
+      for (const post of posts) {
+        const id = String(post.id || '').replace(/^t3_/, '');
+        if (!id || seenIds.has(id)) continue;
+        seenIds.add(id);
+        fresh.push({ ...post, id });
+      }
+      if (!fresh.length && !force) return;
       const res = await chrome.runtime.sendMessage({
         type: 'RRH_ANALYZE_POSTS',
-        posts: force ? posts : batch,
-        forceId,
-        // tell SW whether a card is open (for pending count only; SW still queues all)
+        posts: (force ? posts : fresh).map((post) => ({ ...post, id: String(post.id || '').replace(/^t3_/, '') })),
+        force: !!force,
         overlayOpen: !!O()?.isOpen?.(),
       });
       if (typeof res?.pending === 'number') {
         pendingCount = res.pending;
         O()?.setPendingCount?.(pendingCount);
       }
-      if (res?.ok && forceId) detailAssistedIds.add(forceId);
+      if (res?.recommendation) handleRecommendation(res.recommendation, res.pending);
     } catch (e) {
-      console.warn('[RRH] analyze failed', e);
+      console.warn('[RRH] live analyze failed', e);
     } finally {
       analyzing = false;
       setStatusChip(
         cruiseOn
-          ? cruisePaused
-            ? '巡航已暂停'
-            : pendingCount
-              ? `巡航中 · 待办 ${pendingCount}`
-              : '巡航中'
-          : pendingCount
-            ? `待办 ${pendingCount}`
-            : ''
+          ? (cruisePaused ? '巡航暂停' : pendingCount ? `巡航中 · 待办 ${pendingCount}` : '巡航中')
+          : (pendingCount ? `实时监控 · 待办 ${pendingCount}` : '实时监控中')
       );
     }
   }
 
   async function openNextFromQueue() {
-    try {
-      const res = await chrome.runtime.sendMessage({ type: 'RRH_GET_NEXT_PENDING' });
-      if (res?.ok && res.item) {
-        O()?.show?.(res.item, {
-          language: res.item.language,
-          showEnSubHint: true,
-          pending: res.pending ?? pendingCount,
-        });
-        if (res.item.id) {
-          S()?.highlightPost?.(res.item.id);
-          markRecommended([res.item.id]);
-        }
-        if (typeof res.pending === 'number') {
-          pendingCount = res.pending;
-          O()?.setPendingCount?.(pendingCount);
-        }
-      } else {
-        setStatusChip(res?.message || '待办空了');
-        setTimeout(() => setStatusChip(cruiseOn ? '巡航中' : ''), 2000);
-      }
-    } catch (e) {
-      console.warn('[RRH] next failed', e);
-    }
+    const res = await chrome.runtime.sendMessage({ type: 'RRH_GET_NEXT_LIVE' });
+    if (res?.item) handleRecommendation(res.item, res.pending);
+    else O()?.notify?.(res?.message || '暂无未读推荐');
   }
 
-  function refreshPendingFromSw() {
+  function refreshPending() {
     chrome.runtime.sendMessage({ type: 'RRH_GET_QUEUE' }, (res) => {
       if (!res?.ok) return;
-      const q = res.queue || [];
-      pendingCount = q.filter((x) => x.status === 'new' || x.status === 'later').length;
+      pendingCount = Number(res.pending || 0);
       O()?.setPendingCount?.(pendingCount);
     });
   }
 
-  function applySettings(s) {
-    const nextAiEnabled = !!s.apiKey && s.aiDataConsent === true;
-    const becameAiEnabled = aiEnabled === false && nextAiEnabled;
-    aiEnabled = nextAiEnabled;
-    followEnabled = s.followEnabled !== false;
-    cruiseSpeed = s.cruiseSpeed || 'normal';
-    updateCruiseBar();
-    return becameAiEnabled;
+  function applySettings(settings) {
+    followEnabled = settings.followEnabled !== false;
+    cruiseSpeed = settings.cruiseSpeed || 'normal';
+    if (!followEnabled && cruiseOn) stopCruise();
+    setStatusChip(followEnabled ? (cruiseOn ? '巡航中' : '实时监控中') : '实时监控已关闭');
   }
 
   function startCruise() {
     cruiseOn = true;
     cruisePaused = false;
+    followEnabled = true;
     updateCruiseBar();
-    chrome.runtime.sendMessage({ type: 'RRH_CRUISE_STATE', cruiseOn: true });
-    runAnalyze(false);
     scheduleCruiseTick();
+    runAnalyze(true);
+    O()?.notify?.('巡航已开始');
   }
 
   function stopCruise() {
@@ -428,40 +247,25 @@
     cruisePaused = false;
     clearTimeout(cruiseTimer);
     updateCruiseBar();
-    chrome.runtime.sendMessage({ type: 'RRH_CRUISE_STATE', cruiseOn: false });
-    setStatusChip(pendingCount ? `待办 ${pendingCount}` : '');
+    setStatusChip(pendingCount ? `实时监控 · 待办 ${pendingCount}` : '实时监控中');
+    O()?.notify?.('巡航已停止');
   }
 
   function scheduleCruiseTick() {
     clearTimeout(cruiseTimer);
-    // Cruise continues even if overlay open — user can stash/skip at leisure
     if (!cruiseOn || cruisePaused || document.hidden) return;
-    const delay = cruiseDelay();
+    const delay = cruiseSpeed === 'slow' ? 2200 + Math.random() * 1200
+      : cruiseSpeed === 'fast' ? 900 + Math.random() * 500
+        : 1400 + Math.random() * 800;
     cruiseTimer = window.setTimeout(async () => {
       if (!cruiseOn || cruisePaused) return;
-      const step = cruiseStep();
+      const step = cruiseSpeed === 'slow' ? 350 + Math.random() * 200
+        : cruiseSpeed === 'fast' ? 700 + Math.random() * 300
+          : 500 + Math.random() * 250;
       window.scrollBy({ top: step, behavior: 'smooth' });
-      await sleep(400);
       await runAnalyze(false);
-      if (nearBottom()) setStatusChip('已接近底部');
       if (cruiseOn && !cruisePaused) scheduleCruiseTick();
     }, delay);
-  }
-
-  function cruiseDelay() {
-    if (cruiseSpeed === 'slow') return 2200 + Math.random() * 1200;
-    if (cruiseSpeed === 'fast') return 900 + Math.random() * 500;
-    return 1400 + Math.random() * 900;
-  }
-
-  function cruiseStep() {
-    if (cruiseSpeed === 'slow') return 350 + Math.random() * 200;
-    if (cruiseSpeed === 'fast') return 700 + Math.random() * 300;
-    return 500 + Math.random() * 250;
-  }
-
-  function nearBottom() {
-    return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200;
   }
 
   function updateCruiseBar() {
@@ -476,86 +280,19 @@
     O()?.setCruiseUi?.({
       cruiseOn,
       cruisePaused,
-      status: text || (cruiseOn ? '巡航中' : pendingCount ? `待办 ${pendingCount}` : ''),
+      status: text || (cruiseOn ? '巡航中' : pendingCount ? `待办 ${pendingCount}` : '实时监控中'),
     });
   }
 
-  /**
-   * @param {string[]} ids
-   */
   function markRecommended(ids) {
-    ids.forEach((id) => {
+    for (const id of ids || []) {
       const el = S()?.findElementByPostId?.(id);
-      if (!el) return;
+      if (!el || el.querySelector('.rrh-badge')) continue;
       el.classList.add('rrh-recommended');
-      if (!el.querySelector('.rrh-badge')) {
-        const badge = document.createElement('div');
-        badge.className = 'rrh-badge';
-        badge.textContent = '待办';
-        el.appendChild(badge);
-      }
-    });
-  }
-
-  function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-  }
-
-  function reportCurrentSub() {
-    const m = location.pathname.match(/\/r\/([^/]+)/i);
-    if (!m) {
-      lastReportedSubPage = '';
-      return;
+      const badge = document.createElement('span');
+      badge.className = 'rrh-badge';
+      badge.textContent = '值得回';
+      el.appendChild(badge);
     }
-    const sub = m[1];
-    if (/^(all|popular)$/i.test(sub)) {
-      lastReportedSubPage = '';
-      return;
-    }
-    const pageKey = `${location.pathname}|${sub.toLowerCase()}`;
-    if (pageKey === lastReportedSubPage) return;
-    lastReportedSubPage = pageKey;
-    chrome.runtime.sendMessage({ type: 'RRH_RECORD_VISITED', subs: [sub] }).catch(() => {});
-  }
-
-  function reportRecentSidebarSubs() {
-    const subs = collectRecentSidebarSubs();
-    if (!subs.length) return;
-    const key = subs.map((name) => name.toLowerCase()).join('|');
-    if (key === lastReportedRecentSubs) return;
-    lastReportedRecentSubs = key;
-    chrome.runtime.sendMessage({ type: 'RRH_SET_RECENT_SUBS', subs }).catch(() => {});
-  }
-
-  function collectRecentSidebarSubs() {
-    const labels = [...document.querySelectorAll('[role="heading"], h1, h2, h3, h4, span, p, div')]
-      .filter((el) => /^(最近访问|Recent|Recently visited)$/i.test((el.textContent || '').trim()));
-
-    for (const label of labels) {
-      let container = label.parentElement;
-      for (let depth = 0; container && depth < 6; depth += 1) {
-        const names = [];
-        const seen = new Set();
-        for (const anchor of container.querySelectorAll('a[href]')) {
-          if (!(label.compareDocumentPosition(anchor) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
-          let path = '';
-          try {
-            path = new URL(anchor.href, location.href).pathname;
-          } catch {
-            continue;
-          }
-          const match = path.match(/^\/r\/([^/]+)\/?$/i);
-          if (!match || /^(all|popular)$/i.test(match[1])) continue;
-          const key = match[1].toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          names.push(match[1]);
-          if (names.length === 5) return names;
-        }
-        if (names.length) return names;
-        container = container.parentElement;
-      }
-    }
-    return [];
   }
 })();

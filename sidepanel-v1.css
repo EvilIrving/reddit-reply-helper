@@ -1,0 +1,115 @@
+.pro:not(.unlocked) {
+  opacity: .55;
+}
+
+span.pro::after {
+  content: none !important;
+}
+
+.pro-section:not([open]) summary {
+  min-height: 32px;
+}
+
+.badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: var(--hover);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.badge.banned {
+  color: var(--danger);
+}
+
+.badge.allowed {
+  color: var(--accent);
+}
+
+.chips,
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--hover);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 12px;
+}
+
+.check input {
+  width: auto;
+}
+
+pre {
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: var(--muted);
+  font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.live-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  min-height: 32px;
+}
+
+.live-bar .live-toggle {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.live-bar .text-btn {
+  flex: 0 0 auto;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.btn.compact {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.btn.compact[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--accent) 16%, var(--surface));
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.action-row .btn {
+  flex: 1;
+}
+
+#tab-discover > .btn.full {
+  margin-top: 4px;
+}
+
+#tab-discover .section-head {
+  margin-top: 16px;
+}

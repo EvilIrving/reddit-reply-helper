@@ -23,3 +23,11 @@ coverage/
 .cache/
 tmp/
 
+# 发布私有源：公开仓库只保留说明与示例占位文件
+.private/
+lib/prompts/*
+!lib/prompts/README.md
+!lib/prompts/*.example.js
+lib/license.js
+!lib/license.example.js
+tools/license-issuer/

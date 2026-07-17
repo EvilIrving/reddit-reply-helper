@@ -22,6 +22,18 @@ for target in "${TARGETS[@]}"; do
   # 确保目标目录存在
   mkdir -p "$target"
 
+  # 清理目标中已不存在的 skill 断链
+  for existing in "$target"/*; do
+    [ -e "$existing" ] || [ -L "$existing" ] || continue
+    [ -L "$existing" ] || continue  # 只处理软链接
+    link_target="$(readlink "$existing")"
+    # 如果链接指向源 skills 目录但源已不存
+    if [[ "$link_target" == "$SRC_SKILLS/"* ]] && [ ! -e "$link_target" ]; then
+      rm "$existing"
+      echo "  已清理断链: $(basename "$existing")"
+    fi
+  done
+
   # 遍历源目录下的每个 skill
   for skill_path in "$SRC_SKILLS"/*; do
     [ -e "$skill_path" ] || continue  # 跳过空目录

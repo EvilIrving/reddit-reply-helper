@@ -70,3 +70,4 @@
   cursor: wait;
   opacity: 0.6;
 }
+.rrh-read-translate-btn{appearance:none;border:0;background:transparent;color:#576f9f;font:12px/1.4 system-ui,sans-serif;padding:4px 0;cursor:pointer}.rrh-read-translate-btn:hover{text-decoration:underline}.rrh-read-translate-btn:focus-visible{outline:2px solid #2864c7;outline-offset:2px}.rrh-reading-translation{margin:6px 0;padding:8px 10px;border-radius:8px;background:rgba(127,127,127,.12);color:inherit;font:13px/1.55 system-ui,sans-serif;white-space:pre-wrap}

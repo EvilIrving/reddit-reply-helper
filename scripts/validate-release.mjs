@@ -15,6 +15,10 @@ for (const target of targets) {
     .filter(Boolean)
     .map((entry) => entry.replace(/^\.\//, ''));
   if (!entries.includes('manifest.json')) throw new Error(`${filename} 缺少 manifest.json`);
+  for (const required of ['lib/prompts/reply.js', 'lib/prompts/post.js', 'lib/prompts/translate.js', 'lib/prompts/polish.js', 'lib/license.js']) {
+    if (!entries.includes(required)) throw new Error(`${filename} 缺少私有发布文件：${required}`);
+  }
+  if (entries.some((entry) => entry.endsWith('.example.js'))) throw new Error(`${filename} 不应包含公开占位实现`);
   const leaked = entries.find((entry) => forbidden.some((pattern) => pattern.test(entry)));
   if (leaked) throw new Error(`${filename} 包含不应发布的文件：${leaked}`);
 
