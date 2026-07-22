@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -24,22 +24,17 @@ function fencedAfter(heading, after = '') {
 const templates = Object.fromEntries(definitions.map(([id, heading, after]) => [id, fencedAfter(heading, after)]));
 const safety = fencedAfter('### 4.3 全局安全规则');
 const target = path.join(root, 'lib', 'prompts');
-const privateTarget = path.join(root, '.private', 'lib', 'prompts');
 await mkdir(target, { recursive: true });
-await mkdir(privateTarget, { recursive: true });
 
 for (const [id, template] of Object.entries(templates)) {
   const source = `export const promptVersion = 3;\nexport const template = ${JSON.stringify(template)};\n`;
   await writeFile(path.join(target, `${id}.js`), source);
-  await writeFile(path.join(privateTarget, `${id}.js`), source);
 }
 const safetySource = `export const SAFETY_RULES = ${JSON.stringify(safety)};\n`;
 await writeFile(path.join(target, 'safety.js'), safetySource);
-await writeFile(path.join(privateTarget, 'safety.js'), safetySource);
 
 const indexSource = `import * as reply from './reply.js';\nimport * as post from './post.js';\nimport * as translate from './translate.js';\nimport * as polish from './polish.js';\nimport { SAFETY_RULES } from './safety.js';\n\nexport const PROMPTS = { reply, post, translate, polish };\nexport function assemblePrompt(pipeline, variables = {}, override = null) {\n  const source = override?.text ?? PROMPTS[pipeline]?.template;\n  if (!source) throw new Error(\`未知管线：\${pipeline}\`);\n  const rendered = source.replace(/{{([a-z_]+)}}/g, (_, key) => {\n    if (variables[key] == null) console.warn(\`[RRH] 未定义模板变量: \${key}\`);\n    return String(variables[key] ?? '');\n  });\n  return \`\${rendered.trim()}\\n\\n\${SAFETY_RULES}\`;\n}\n`;
 await writeFile(path.join(target, 'index.js'), indexSource);
-await writeFile(path.join(privateTarget, 'index.js'), indexSource);
 
 const varsStart = spec.indexOf('### 4.2.1 模板变量总表');
 const varsEnd = spec.indexOf('### 4.3 全局安全规则', varsStart);
@@ -48,5 +43,4 @@ snapshot += `${spec.slice(varsStart, varsEnd).trim()}\n\n`;
 for (const [id, template] of Object.entries(templates)) snapshot += `## ${id}\n\n\`\`\`\n${template}\n\`\`\`\n\n`;
 snapshot += `## 全局安全尾段\n\n\`\`\`\n${safety}\n\`\`\`\n`;
 await writeFile(path.join(root, 'PROMPTS.md'), snapshot);
-await cp(path.join(root, 'lib', 'license.js'), path.join(root, '.private', 'lib', 'license.js'));
-console.log('已从 SPEC.md 同步四条模板、全局安全尾段和私有发布源。');
+console.log('已从 SPEC.md 同步四条模板和全局安全尾段。');

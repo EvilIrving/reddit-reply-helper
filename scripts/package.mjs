@@ -19,6 +19,7 @@ const commonFiles = [
   'sidepanel.js',
   'content/content.css',
   'content/content.js',
+  'content/overlay.js',
   'content/scrape.js',
   'content/translate.js',
   'lib',
@@ -42,13 +43,11 @@ for (const target of targets) {
 
   for (const entry of commonFiles) {
     await mkdir(path.dirname(path.join(stage, entry)), { recursive: true });
-    await cp(path.join(root, entry), path.join(stage, entry), { recursive: true });
+    await cp(path.join(root, entry), path.join(stage, entry), {
+      recursive: true,
+      filter: (source) => path.basename(source) !== '.DS_Store',
+    });
   }
-  await rm(path.join(stage, 'lib', 'prompts'), { recursive: true, force: true });
-  await rm(path.join(stage, 'lib', 'license.js'), { force: true });
-  await rm(path.join(stage, 'lib', 'license.example.js'), { force: true });
-  await cp(path.join(root, '.private', 'lib', 'prompts'), path.join(stage, 'lib', 'prompts'), { recursive: true });
-  await cp(path.join(root, '.private', 'lib', 'license.js'), path.join(stage, 'lib', 'license.js'));
   await writeFile(path.join(stage, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   await validateStage(stage, manifest);
 

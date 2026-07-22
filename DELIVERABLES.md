@@ -21,12 +21,9 @@ chrome-reddit-reply-helper/
 │   ├── pipelines.js
 │   ├── reddit-client.js
 │   ├── store.js
-│   ├── license.js                 # 私有、被忽略、开发目录可加载
-│   ├── license.example.js         # 公开占位
+│   ├── license.js
 │   └── prompts/
-│       ├── README.md              # 公开占位说明
-│       ├── *.example.js           # 公开占位
-│       └── {reply,post,translate,polish,safety,index}.js  # 私有、被忽略
+│       └── {reply,post,translate,polish,safety,index}.js
 ├── scripts/
 │   ├── package.mjs
 │   ├── sync-spec-prompts.mjs
